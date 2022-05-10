@@ -1,3 +1,4 @@
+from genericpath import exists
 from sqlite3 import connect
 import boto3
 import os
@@ -172,15 +173,36 @@ def delete_asset(event, context):
     # API logic here
     # -----------
 
+    asset_id = message_body["asset_id"]
+    where_clause = ("asset_id=%s", [asset_id])
+
+    try:
+        Connector.delete(
+            table="data_asset",
+            where=where_clause
+        )
+        Connector.delete(
+            table="data_asset_attributes",
+            where=where_clause
+        )
+        status = "200"
+    except Exception as e:
+        print(e)
+        status = "404"
+        Connector.rollback()
+
     # -----------
 
     # API event entry in dynamoDb
     response = insert_event_to_dynamoDb(event, context, api_call_type)
     return{
-        "statusCode": "200",
+        "statusCode": status,
         "sourcePayload": message_body,
         "sourceCodeDynamoDb": response["statusCode"],
-        "body": "delete_asset function to be defined",
+        "body": {
+            "asset_id": asset_id
+        },
+        exists: True
     }
 
 
@@ -215,3 +237,5 @@ def lambda_handler(event, context):
 
         else:
             return {"statusCode": "404", "body": "Not found"}
+
+    Connector.close()
