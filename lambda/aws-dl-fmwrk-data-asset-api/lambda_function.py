@@ -65,16 +65,39 @@ def create_asset(event, context):
 
     # API logic here
     # -----------
+    data_dataAsset = {
+
+    }
+    data_dataAssetAttributes = {
+
+    }
+    try:
+        Connector.insert(
+            table="data_asset",
+            data=data_dataAsset
+        )
+        Connector.insert(
+            table="data_asset_attributes",
+            data=data_dataAssetAttributes
+        )
+        status = "200"
+    except Exception as e:
+        print(e)
+        status = "404"
+        Connector.rollback()
 
     # -----------
 
     # API event entry in dynamoDb
     response = insert_event_to_dynamoDb(event, context, api_call_type)
     return{
-        "statusCode": "200",
+        "statusCode": status,
         "sourcePayload": message_body,
         "sourceCodeDynamoDb": response["statusCode"],
-        "body": "create_asset function to be defined",
+        "body": {
+
+        },
+        "exists": True
     }
 
 
