@@ -99,11 +99,11 @@ def read_asset(event, context):
                 cols="*",
                 where=where_clause
             )
-        status = 200
+        status = "200"
 
     except Exception as e:
         print(e)
-        status = 404
+        status = "404"
 
     # -----------
     # API event entry in dynamoDb
@@ -127,12 +127,38 @@ def update_asset(event, context):
     # API logic here
     # -----------
 
+    asset_id = message_body["asset_id"]
+    where_clause = ("asset_id=%s", [asset_id])
+    data_dataAsset = {
+
+    }
+    data_dataAssetAttributes = {
+
+    }
+    try:
+        Connector.update(
+            table="data_asset",
+            data=data_dataAsset,
+            where=where_clause
+        )
+        Connector.update(
+            table="data_asset_attributes",
+            data=data_dataAssetAttributes,
+            where=where_clause
+        )
+        status = "200"
+
+    except Exception as e:
+        print(e)
+        Connector.rollback()
+        status = "404"
+
     # -----------
 
     # API event entry in dynamoDb
     response = insert_event_to_dynamoDb(event, context, api_call_type)
     return{
-        "statusCode": "200",
+        "statusCode": status,
         "sourcePayload": message_body,
         "sourceCodeDynamoDb": response["statusCode"],
         "body": "update_asset function to be defined",
