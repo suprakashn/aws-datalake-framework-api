@@ -109,20 +109,23 @@ def read_asset(event, context):
     # -----------
 
     asset_id = message_body["asset_id"]
-    where_clause = ("asset_id=%s", [asset_id])
     columns = message_body["columns"]
+    limit_number = message_body["limit"]
+    where_clause = ("asset_id=%s", [asset_id])
 
     try:
         dict_dataAsset = Connector.retrieve_dict(
             table="data_asset",
             cols=columns,
-            where=where_clause
+            where=where_clause,
+            limit=limit_number
         )
         if dict_dataAsset:
             dict_dataAssetAttributes = Connector.retrieve_dict(
                 table="data_asset_attributes",
                 cols=columns,
-                where=where_clause
+                where=where_clause,
+                limit=limit_number
             )
         status = "200"
         body = {
@@ -156,8 +159,8 @@ def update_asset(event, context):
     # -----------
 
     asset_id = message_body["asset_id"]
-    data_dataAsset = message_body[data_dataAsset]
-    data_dataAssetAttributes = message_body[data_dataAssetAttributes]
+    data_dataAsset = message_body["asset_info"]
+    data_dataAssetAttributes = message_body["asset_attributes"]
     where_clause = ("asset_id=%s", [asset_id])
 
     try:
