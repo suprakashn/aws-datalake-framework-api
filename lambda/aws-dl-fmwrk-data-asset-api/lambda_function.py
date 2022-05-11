@@ -108,8 +108,12 @@ def read_asset(event, context):
     # API logic here
     # -----------
 
+    if message_body["columns"] != "*":
+        column_dict = message_body["columns"]
+        columns = list(column_dict.values())
+    else:
+        columns = message_body["columns"]
     asset_id = message_body["asset_id"]
-    columns = message_body["columns"]
     limit_number = message_body["limit"]
     where_clause = ("asset_id=%s", [asset_id])
 
