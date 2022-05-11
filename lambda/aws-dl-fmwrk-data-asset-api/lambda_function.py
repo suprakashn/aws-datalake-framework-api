@@ -156,13 +156,10 @@ def update_asset(event, context):
     # -----------
 
     asset_id = message_body["asset_id"]
+    data_dataAsset = message_body[data_dataAsset]
+    data_dataAssetAttributes = message_body[data_dataAssetAttributes]
     where_clause = ("asset_id=%s", [asset_id])
-    data_dataAsset = {
 
-    }
-    data_dataAssetAttributes = {
-
-    }
     try:
         Connector.update(
             table="data_asset",
@@ -175,11 +172,20 @@ def update_asset(event, context):
             where=where_clause
         )
         status = "200"
+        body = {
+            "updated": {
+                "dataAsset": data_dataAsset,
+                "dataAssetAttributes": data_dataAssetAttributes
+            }
+        }
 
     except Exception as e:
         print(e)
         Connector.rollback()
         status = "404"
+        body = {
+            "error": f"{e}"
+        }
 
     # -----------
 
@@ -189,7 +195,7 @@ def update_asset(event, context):
         "statusCode": status,
         "sourcePayload": message_body,
         "sourceCodeDynamoDb": response["statusCode"],
-        "body": "update_asset function to be defined",
+        "body": body
     }
 
 
