@@ -17,12 +17,12 @@ def getGlobalParams():
         return json_config
 
 
-def create_src_s3_dir_str(asset_id, asset_json_file, region):
+def create_src_s3_dir_str(asset_id, event):
+    message_body = event["body-json"]
     global_config = getGlobalParams()
-    with open(asset_json_file) as json_file:
-        asset_config = json.load(json_file)
 
-    src_sys_id = asset_config["src_sys_id"]
+    region = global_config["primary_region"]
+    src_sys_id = message_body["src_sys_id"]
     bucket_name = f"{global_config['fm_prefix']}-{str(src_sys_id)}-{region}"
     print(
         "Creating directory structure in {} bucket".format(bucket_name)
