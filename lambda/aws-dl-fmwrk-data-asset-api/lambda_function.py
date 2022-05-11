@@ -219,9 +219,16 @@ def delete_asset(event, context):
             where=where_clause
         )
         status = "200"
+        body = {
+            "deleted_asset": asset_id
+        }
+
     except Exception as e:
         print(e)
         status = "404"
+        body = {
+            "error": f"{e}"
+        }
         Connector.rollback()
 
     # -----------
@@ -232,10 +239,7 @@ def delete_asset(event, context):
         "statusCode": status,
         "sourcePayload": message_body,
         "sourceCodeDynamoDb": response["statusCode"],
-        "body": {
-            "asset_id": asset_id
-        },
-        exists: True
+        "body": body
     }
 
 
