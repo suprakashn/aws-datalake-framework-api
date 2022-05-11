@@ -7,6 +7,53 @@ from datetime import datetime
 from connector import Connector
 
 
+def getGlobalParams():
+    # absolute dir the script is in
+    script_dir = os.path.dirname(__file__)
+    gbl_cfg_rel_path = "../../config/globalConfig.json"
+    gbl_cfg_abs_path = os.path.join(script_dir, gbl_cfg_rel_path)
+    with open(gbl_cfg_abs_path) as json_file:
+        json_config = json.load(json_file)
+        return json_config
+
+
+def create_src_s3_dir_str(asset_id, asset_json_file, region):
+    global_config = getGlobalParams()
+    with open(asset_json_file) as json_file:
+        asset_config = json.load(json_file)
+
+    src_sys_id = asset_config["src_sys_id"]
+    bucket_name = f"{global_config['fm_prefix']}-{str(src_sys_id)}-{region}"
+    print(
+        "Creating directory structure in {} bucket".format(bucket_name)
+    )
+    os.system(
+        'aws s3api put-object --bucket "{}" --key "{}/init/dummy"'.format(
+            bucket_name, asset_id
+        )
+    )
+    os.system(
+        'aws s3api put-object --bucket "{}" --key "{}/error/dummy"'.format(
+            bucket_name, asset_id
+        )
+    )
+    os.system(
+        'aws s3api put-object --bucket "{}" --key "{}/masked/dummy"'.format(
+            bucket_name, asset_id
+        )
+    )
+    os.system(
+        'aws s3api put-object --bucket "{}" --key "{}/error/dummy"'.format(
+            bucket_name, asset_id
+        )
+    )
+    os.system(
+        'aws s3api put-object --bucket "{}" --key "{}/logs/dummy"'.format(
+            bucket_name, asset_id
+        )
+    )
+
+
 def insert_event_to_dynamoDb(event, context, api_call_type, status="success", op_type="insert"):
     cur_time = datetime.now()
     aws_request_id = context.aws_request_id
