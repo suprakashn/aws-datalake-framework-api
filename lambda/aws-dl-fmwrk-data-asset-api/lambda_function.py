@@ -53,6 +53,90 @@ def create_src_s3_dir_str(asset_id, message_body):
     )
 
 
+def set_bucket_event_notification(asset_id, message_body):
+    """
+    Utility method to set the bucket event notification by getting prior event settings
+    :param asset_id:
+    :param asset_json_file: A json formatted document that contains details about the asset
+    :param region:
+    :return:
+    """
+    global_config = getGlobalParams()
+
+    region = global_config["primary_region"]
+    src_sys_id = message_body["asset_info"]["src_sys_id"]
+
+    bucket_name = (
+        global_config["fm_prefix"]
+        + "-"
+        + str(src_sys_id)
+        + "-"
+        + region
+    )
+    key_prefix = str(asset_id) + "/init/"
+    if not message_body["multipartition"]:
+        key_suffix = message_body["file_type"]
+    else:
+        key_suffix = message_body["trigger_file_pattern"]
+    s3_event_name = str(asset_id) + "-createObject"
+    sns_name = (
+        global_config["fm_prefix"]
+        + "-"
+        + str(src_sys_id)
+        + "-init-file-creation"
+    )
+    sns_arn = (
+        "arn:aws:sns:"
+        + region
+        + ":"
+        + global_config["aws_account"]
+        + ":"
+        + sns_name
+    )
+    s3Client = boto3.client("s3")
+    print(
+        "Creating putObject event notification to {} bucket".format(
+            bucket_name
+        )
+    )
+    new_config = {
+        "Id": s3_event_name,
+        "TopicArn": sns_arn,
+        "Events": ["s3:ObjectCreated:*"],
+        "Filter": {
+            "Key": {
+                "FilterRules": [
+                    {"Name": "prefix", "Value": key_prefix},
+                    {"Name": "suffix", "Value": key_suffix},
+                ]
+            }
+        },
+    }
+    response = s3Client.get_bucket_notification_configuration(
+        Bucket=bucket_name
+    )
+    if "TopicConfigurations" not in response.keys():
+        # If the bucket doesn't have event notification configured
+        # Attach a new Topic Config
+        s3Client.put_bucket_notification_configuration(
+            Bucket=bucket_name,
+            NotificationConfiguration={
+                "TopicConfigurations": [new_config]
+            },
+        )
+    else:
+        # The bucket has event notif configured.
+        # Get the initial configs and append the new config
+        bucket_config = response["TopicConfigurations"]
+        bucket_config.append(new_config)
+        s3Client.put_bucket_notification_configuration(
+            Bucket=bucket_name,
+            NotificationConfiguration={
+                "TopicConfigurations": bucket_config
+            },
+        )
+
+
 def insert_event_to_dynamoDb(event, context, api_call_type, status="success", op_type="insert"):
     cur_time = datetime.now()
     aws_request_id = context.aws_request_id
@@ -138,6 +222,8 @@ def create_asset(event, context):
 
     if status == "200":
         create_src_s3_dir_str(asset_id=asset_id, message_body=message_body)
+        set_bucket_event_notification(
+            asset_id=asset_id, message_body=message_body)
 
     # -----------
 
@@ -148,7 +234,6 @@ def create_asset(event, context):
         "sourcePayload": message_body,
         "sourceCodeDynamoDb": response["statusCode"],
         "body": body,
-        "exists": True
     }
 
 
