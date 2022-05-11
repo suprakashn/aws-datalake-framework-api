@@ -110,24 +110,32 @@ def read_asset(event, context):
 
     asset_id = message_body["asset_id"]
     where_clause = ("asset_id=%s", [asset_id])
+    columns = message_body["columns"]
 
     try:
-        res1 = Connector.retrieve_dict(
+        dict_dataAsset = Connector.retrieve_dict(
             table="data_asset",
-            cols="*",
+            cols=columns,
             where=where_clause
         )
-        if res1:
-            res2 = Connector.retrieve_dict(
+        if dict_dataAsset:
+            dict_dataAssetAttributes = Connector.retrieve_dict(
                 table="data_asset_attributes",
-                cols="*",
+                cols=columns,
                 where=where_clause
             )
         status = "200"
+        body = {
+            "asset_info": dict_dataAsset,
+            "asset_attributes": dict_dataAssetAttributes
+        }
 
     except Exception as e:
         print(e)
         status = "404"
+        body = {
+            "error": f"{e}"
+        }
 
     # -----------
     # API event entry in dynamoDb
@@ -136,11 +144,7 @@ def read_asset(event, context):
         "statusCode": status,
         "sourcePayload": message_body,
         "sourceCodeDynamoDb": response["statusCode"],
-        "body": {
-            "asset_info": res1,
-            "asset_attributes": res2
-        },
-        "exists": True
+        "body": body
     }
 
 
