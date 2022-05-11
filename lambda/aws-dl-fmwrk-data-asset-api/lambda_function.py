@@ -17,12 +17,11 @@ def getGlobalParams():
         return json_config
 
 
-def create_src_s3_dir_str(asset_id, event):
-    message_body = event["body-json"]
+def create_src_s3_dir_str(asset_id, message_body):
     global_config = getGlobalParams()
 
     region = global_config["primary_region"]
-    src_sys_id = message_body["src_sys_id"]
+    src_sys_id = message_body["asset_info"]["src_sys_id"]
     bucket_name = f"{global_config['fm_prefix']}-{str(src_sys_id)}-{region}"
     print(
         "Creating directory structure in {} bucket".format(bucket_name)
@@ -109,15 +108,12 @@ def insert_event_to_dynamoDb(event, context, api_call_type, status="success", op
 def create_asset(event, context):
     message_body = event["body-json"]
     api_call_type = "synchronous"
+    asset_id = message_body["asset_info"]["asset_id"]
 
     # API logic here
     # -----------
-    data_dataAsset = {
-
-    }
-    data_dataAssetAttributes = {
-
-    }
+    data_dataAsset = message_body["asset_info"]
+    data_dataAssetAttributes = message_body["asset_attributes"]
     try:
         Connector.insert(
             table="data_asset",
@@ -128,10 +124,20 @@ def create_asset(event, context):
             data=data_dataAssetAttributes
         )
         status = "200"
+        body = {
+            "assetId_inserted": asset_id
+        }
+
     except Exception as e:
         print(e)
         status = "404"
         Connector.rollback()
+        body = {
+            "error": f"{e}"
+        }
+
+    if status == "200":
+        create_src_s3_dir_str(asset_id=asset_id, message_body=message_body)
 
     # -----------
 
@@ -141,9 +147,7 @@ def create_asset(event, context):
         "statusCode": status,
         "sourcePayload": message_body,
         "sourceCodeDynamoDb": response["statusCode"],
-        "body": {
-
-        },
+        "body": body,
         "exists": True
     }
 
