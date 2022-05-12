@@ -372,11 +372,11 @@ def delete_asset(event, context, database):
 
     try:
         database.delete(
-            table="data_asset",
+            table="data_asset_attributes",
             where=where_clause
         )
         database.delete(
-            table="data_asset_attributes",
+            table="data_asset",
             where=where_clause
         )
         status = "200"
