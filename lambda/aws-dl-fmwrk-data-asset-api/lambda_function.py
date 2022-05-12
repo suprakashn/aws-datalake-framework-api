@@ -17,12 +17,18 @@ def getGlobalParams():
         return json_config
 
 
-def create_src_s3_dir_str(asset_id, message_body):
-    global_config = getGlobalParams()
+def get_database(config):
+    db_secret = config['db_secret']
+    db_region = config['primary_region']
+    conn = Connector(db_secret, db_region)
+    return conn
 
-    region = global_config["primary_region"]
+
+def create_src_s3_dir_str(asset_id, message_body, config):
+
+    region = config["primary_region"]
     src_sys_id = message_body["asset_info"]["src_sys_id"]
-    bucket_name = f"{global_config['fm_prefix']}-{str(src_sys_id)}-{region}"
+    bucket_name = f"{config['fm_prefix']}-{str(src_sys_id)}-{region}"
     print(
         "Creating directory structure in {} bucket".format(bucket_name)
     )
@@ -53,7 +59,7 @@ def create_src_s3_dir_str(asset_id, message_body):
     )
 
 
-def set_bucket_event_notification(asset_id, message_body):
+def set_bucket_event_notification(asset_id, message_body, config):
     """
     Utility method to set the bucket event notification by getting prior event settings
     :param asset_id:
@@ -61,13 +67,12 @@ def set_bucket_event_notification(asset_id, message_body):
     :param region:
     :return:
     """
-    global_config = getGlobalParams()
 
-    region = global_config["primary_region"]
+    region = config["primary_region"]
     src_sys_id = message_body["asset_info"]["src_sys_id"]
 
     bucket_name = (
-        global_config["fm_prefix"]
+        config["fm_prefix"]
         + "-"
         + str(src_sys_id)
         + "-"
@@ -80,7 +85,7 @@ def set_bucket_event_notification(asset_id, message_body):
         key_suffix = message_body["trigger_file_pattern"]
     s3_event_name = str(asset_id) + "-createObject"
     sns_name = (
-        global_config["fm_prefix"]
+        config["fm_prefix"]
         + "-"
         + str(src_sys_id)
         + "-init-file-creation"
@@ -89,7 +94,7 @@ def set_bucket_event_notification(asset_id, message_body):
         "arn:aws:sns:"
         + region
         + ":"
-        + global_config["aws_account"]
+        + config["aws_account"]
         + ":"
         + sns_name
     )
@@ -189,7 +194,7 @@ def insert_event_to_dynamoDb(event, context, api_call_type, status="success", op
     }
 
 
-def create_asset(event, context):
+def create_asset(event, context, config, database):
     message_body = event["body-json"]
     api_call_type = "synchronous"
     asset_id = message_body["asset_info"]["asset_id"]
@@ -199,11 +204,11 @@ def create_asset(event, context):
     data_dataAsset = message_body["asset_info"]
     data_dataAssetAttributes = message_body["asset_attributes"]
     try:
-        Connector.insert(
+        database.insert(
             table="data_asset",
             data=data_dataAsset
         )
-        Connector.insert(
+        database.insert(
             table="data_asset_attributes",
             data=data_dataAssetAttributes
         )
@@ -215,15 +220,16 @@ def create_asset(event, context):
     except Exception as e:
         print(e)
         status = "404"
-        Connector.rollback()
+        database.rollback()
         body = {
             "error": f"{e}"
         }
 
     if status == "200":
-        create_src_s3_dir_str(asset_id=asset_id, message_body=message_body)
+        create_src_s3_dir_str(
+            asset_id=asset_id, message_body=message_body, config=config)
         set_bucket_event_notification(
-            asset_id=asset_id, message_body=message_body)
+            asset_id=asset_id, message_body=message_body, config=config)
 
     # -----------
 
@@ -237,7 +243,7 @@ def create_asset(event, context):
     }
 
 
-def read_asset(event, context):
+def read_asset(event, context, database):
     message_body = event["body-json"]
     api_call_type = "synchronous"
 
@@ -254,14 +260,15 @@ def read_asset(event, context):
     where_clause = ("asset_id=%s", [asset_id])
 
     try:
-        dict_dataAsset = Connector.retrieve_dict(
+
+        dict_dataAsset = database.retrieve_dict(
             table="data_asset",
             cols=columns,
             where=where_clause,
             limit=limit_number
         )
         if dict_dataAsset:
-            dict_dataAssetAttributes = Connector.retrieve_dict(
+            dict_dataAssetAttributes = database.retrieve_dict(
                 table="data_asset_attributes",
                 cols=columns,
                 where=where_clause,
@@ -291,7 +298,7 @@ def read_asset(event, context):
     }
 
 
-def update_asset(event, context):
+def update_asset(event, context, database):
     message_body = event["body-json"]
     api_call_type = "synchronous"
 
@@ -304,12 +311,12 @@ def update_asset(event, context):
     where_clause = ("asset_id=%s", [asset_id])
 
     try:
-        Connector.update(
+        database.update(
             table="data_asset",
             data=data_dataAsset,
             where=where_clause
         )
-        Connector.update(
+        database.update(
             table="data_asset_attributes",
             data=data_dataAssetAttributes,
             where=where_clause
@@ -324,7 +331,7 @@ def update_asset(event, context):
 
     except Exception as e:
         print(e)
-        Connector.rollback()
+        database.rollback()
         status = "404"
         body = {
             "error": f"{e}"
@@ -342,7 +349,7 @@ def update_asset(event, context):
     }
 
 
-def delete_asset(event, context):
+def delete_asset(event, context, database):
     message_body = event["body-json"]
     api_call_type = "synchronous"
 
@@ -353,11 +360,11 @@ def delete_asset(event, context):
     where_clause = ("asset_id=%s", [asset_id])
 
     try:
-        Connector.delete(
+        database.delete(
             table="data_asset",
             where=where_clause
         )
-        Connector.delete(
+        database.delete(
             table="data_asset_attributes",
             where=where_clause
         )
@@ -372,7 +379,7 @@ def delete_asset(event, context):
         body = {
             "error": f"{e}"
         }
-        Connector.rollback()
+        database.rollback()
 
     # -----------
 
@@ -396,26 +403,30 @@ def lambda_handler(event, context):
     print(method)
 
     if event:
+        global_config = getGlobalParams()
+        db = get_database(config=global_config)
+
         if method == "health":
             return {"statusCode": "200", "body": "API Health is good"}
 
         elif method == "create":
-            response = create_asset(event, context)
+            response = create_asset(
+                event, context, config=global_config, database=db)
             return response
 
         elif method == "read":
-            response = read_asset(event, context)
+            response = read_asset(event, context, database=db)
             return response
 
         elif method == "update":
-            response = update_asset(event, context)
+            response = update_asset(event, context, database=db)
             return response
 
         elif method == "delete":
-            response = delete_asset(event, context)
+            response = delete_asset(event, context, database=db)
             return response
 
         else:
             return {"statusCode": "404", "body": "Not found"}
 
-    Connector.close()
+    db.close()
