@@ -8,19 +8,15 @@ from connector import Connector
 
 
 def getGlobalParams():
-    # absolute dir the script is in
-    script_dir = os.path.dirname(__file__)
-    gbl_cfg_rel_path = "../../config/globalConfig.json"
-    gbl_cfg_abs_path = os.path.join(script_dir, gbl_cfg_rel_path)
-    with open(gbl_cfg_abs_path) as json_file:
+    with open('globalConfig.json', "r") as json_file:
         json_config = json.load(json_file)
         return json_config
 
 
 def get_database(config):
-    db_secret = config['db_secret']
-    db_region = config['primary_region']
-    conn = Connector(db_secret, db_region)
+    db_secret = os.environ['secret_name']
+    db_region = os.environ['secret_region']
+    conn = Connector(secret=db_secret, region=db_region)
     return conn
 
 
@@ -94,7 +90,7 @@ def set_bucket_event_notification(asset_id, message_body, config):
         "arn:aws:sns:"
         + region
         + ":"
-        + config["aws_account"]
+        + os.environ['aws_account']
         + ":"
         + sns_name
     )
@@ -256,7 +252,7 @@ def read_asset(event, context, database):
     else:
         columns = message_body["columns"]
     asset_id = message_body["asset_id"]
-    limit_number = message_body["limit"]
+    limit_number = int(message_body["limit"])
     where_clause = ("asset_id=%s", [asset_id])
 
     try:
