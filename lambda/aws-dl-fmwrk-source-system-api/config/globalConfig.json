@@ -1,8 +1,7 @@
 {
-  "aws_account": "076931226898",
   "fm_prefix": "dl-fmwrk",
   "primary_region": "us-east-2",
   "secondary_region": "us-east-1",
-  "log_type": "S",
-  "secret_name": "cape_privacy_key"
+  "src_sys_table": "source_system",
+  "ingestion_table" : "source_system_ingstn_atrbts"
 }
