@@ -246,29 +246,37 @@ def read_asset(event, context, database):
     # API logic here
     # -----------
 
-    if message_body["columns"] != "*":
-        column_dict = message_body["columns"]
-        columns = list(column_dict.values())
+    # Getting the column info
+    if message_body["asset_info"]["columns"] != "*":
+        column_dict = message_body["asset_info"]["columns"]
+        assetInfo_columns = list(column_dict.values())
     else:
-        columns = message_body["columns"]
+        assetInfo_columns = message_body["asset_info"]["columns"]
+    if message_body["asset_attributes"]["columns"] != "*":
+        column_dict = message_body["asset_attributes"]["columns"]
+        assetAttributes_columns = list(column_dict.values())
+    else:
+        assetAttributes_columns = message_body["asset_attributes"]["columns"]
+    # Getting the asset id
     asset_id = message_body["asset_id"]
-    limit_number = int(message_body["limit"])
+    # Getting the limit
+    assetAttributes_limit = int(message_body["asset_attributes"]["limit"])
+    # Where clause
     where_clause = ("asset_id=%s", [asset_id])
 
     try:
 
         dict_dataAsset = database.retrieve_dict(
             table="data_asset",
-            cols=columns,
-            where=where_clause,
-            limit=limit_number
+            cols=assetInfo_columns,
+            where=where_clause
         )
         if dict_dataAsset:
             dict_dataAssetAttributes = database.retrieve_dict(
                 table="data_asset_attributes",
-                cols=columns,
+                cols=assetAttributes_columns,
                 where=where_clause,
-                limit=limit_number
+                limit=assetAttributes_limit
             )
         status = "200"
         body = {
