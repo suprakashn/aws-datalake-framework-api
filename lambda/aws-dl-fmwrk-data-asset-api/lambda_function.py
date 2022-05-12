@@ -13,10 +13,10 @@ def getGlobalParams():
         return json_config
 
 
-def get_database(config):
+def get_database():
     db_secret = os.environ['secret_name']
     db_region = os.environ['secret_region']
-    conn = Connector(secret=db_secret, region=db_region, autocommit=True)
+    conn = Connector(secret=db_secret, region=db_region, autocommit=False)
     return conn
 
 
@@ -75,10 +75,10 @@ def set_bucket_event_notification(asset_id, message_body, config):
         + region
     )
     key_prefix = str(asset_id) + "/init/"
-    if not message_body["multipartition"]:
-        key_suffix = message_body["file_type"]
+    if message_body["asset_info"]["multipartition"] == "false":
+        key_suffix = message_body["asset_info"]["file_type"]
     else:
-        key_suffix = message_body["trigger_file_pattern"]
+        key_suffix = message_body["asset_info"]["trigger_file_pattern"]
     s3_event_name = str(asset_id) + "-createObject"
     sns_name = (
         config["fm_prefix"]
@@ -193,20 +193,47 @@ def insert_event_to_dynamoDb(event, context, api_call_type, status="success", op
 def create_asset(event, context, config, database):
     message_body = event["body-json"]
     api_call_type = "synchronous"
-    asset_id = message_body["asset_info"]["asset_id"]
 
     # API logic here
     # -----------
+    asset_id = message_body["asset_id"]
     data_dataAsset = message_body["asset_info"]
     data_dataAssetAttributes = message_body["asset_attributes"]
+
+    colData_dataAsset = {
+        "asset_id": asset_id,
+        "src_sys_id": data_dataAsset["src_sys_id"],
+        "target_id": data_dataAsset["target_id"],
+        "file_header": True if data_dataAsset["file_header"] is "true" else False,
+        "multipartition": True if data_dataAsset["multipartition"] is "true" else False,
+        "file_type": data_dataAsset["file_type"],
+        "asset_nm": data_dataAsset["asset_nm"],
+        "source_path": data_dataAsset["source_path"],
+        "target_path": data_dataAsset["target_path"],
+        "file_delim": data_dataAsset["file_delim"],
+        "file_encryption_ind": True if data_dataAsset["file_encryption_ind"] is "true" else False,
+        "athena_table_name": data_dataAsset["athena_table_name"],
+        "asset_owner": data_dataAsset["asset_owner"],
+        "support_cntct": data_dataAsset["support_cntct"],
+        # "modified_ts": "CURRENT_TIMESTAMP"
+    }
+    colData_dataAssetAttributes = list(data_dataAssetAttributes.values())
+    for i in colData_dataAssetAttributes:
+        # i["modified_ts"] = "CURRENT_TIMESTAMP"
+        i["asset_id"] = asset_id
+        i["req_tokenization"] = True if i["req_tokenization"] is "true" else False
+        i["pk_ind"] = True if i["pk_ind"] is "true" else False
+        i["null_ind"] = True if i["null_ind"] is "true" else False
+        i["tgt_col_nm"] = i["col_nm"]
+        i["tgt_data_type"] = i["data_type"]
     try:
         database.insert(
             table="data_asset",
-            data=data_dataAsset
+            data=colData_dataAsset
         )
-        database.insert(
+        database.insert_many(
             table="data_asset_attributes",
-            data=data_dataAssetAttributes
+            data=colData_dataAssetAttributes
         )
         status = "200"
         body = {
@@ -414,30 +441,34 @@ def lambda_handler(event, context):
     print(method)
 
     if event:
-        global_config = getGlobalParams()
-        db = get_database(config=global_config)
-
         if method == "health":
             return {"statusCode": "200", "body": "API Health is good"}
 
         elif method == "create":
+            global_config = getGlobalParams()
+            db = get_database()
             response = create_asset(
                 event, context, config=global_config, database=db)
+            db.close()
             return response
 
         elif method == "read":
+            db = get_database()
             response = read_asset(event, context, database=db)
+            db.close()
             return response
 
         elif method == "update":
+            db = get_database()
             response = update_asset(event, context, database=db)
+            db.close()
             return response
 
         elif method == "delete":
+            db = get_database()
             response = delete_asset(event, context, database=db)
+            db.close()
             return response
 
         else:
             return {"statusCode": "404", "body": "Not found"}
-
-    db.close()
