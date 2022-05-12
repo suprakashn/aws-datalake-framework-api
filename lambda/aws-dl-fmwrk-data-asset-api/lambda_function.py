@@ -16,7 +16,7 @@ def getGlobalParams():
 def get_database(config):
     db_secret = os.environ['secret_name']
     db_region = os.environ['secret_region']
-    conn = Connector(secret=db_secret, region=db_region)
+    conn = Connector(secret=db_secret, region=db_region, autocommit=True)
     return conn
 
 
@@ -312,19 +312,26 @@ def update_asset(event, context, database):
     asset_id = message_body["asset_id"]
     data_dataAsset = message_body["asset_info"]
     data_dataAssetAttributes = message_body["asset_attributes"]
-    where_clause = ("asset_id=%s", [asset_id])
+    dataAsset_where = ("asset_id=%s", [asset_id])
 
     try:
         database.update(
             table="data_asset",
             data=data_dataAsset,
-            where=where_clause
+            where=dataAsset_where
         )
-        database.update(
-            table="data_asset_attributes",
-            data=data_dataAssetAttributes,
-            where=where_clause
-        )
+        for col in data_dataAssetAttributes.keys():
+            col_id = data_dataAssetAttributes[col]["column_id"]
+            col_data = {
+                k: v for k, v in data_dataAssetAttributes[col].items() if k != "column_id"
+            }
+            dataAssetAttributes_where = (
+                "asset_id=%s and col_id=%s", [asset_id, col_id])
+            database.update(
+                table="data_asset_attributes",
+                data=col_data,
+                where=dataAssetAttributes_where
+            )
         status = "200"
         body = {
             "updated": {
