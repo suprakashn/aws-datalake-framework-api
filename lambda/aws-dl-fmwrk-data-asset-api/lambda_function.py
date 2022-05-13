@@ -28,30 +28,22 @@ def create_src_s3_dir_str(asset_id, message_body, config):
     print(
         "Creating directory structure in {} bucket".format(bucket_name)
     )
-    os.system(
-        'aws s3api put-object --bucket "{}" --key "{}/init/dummy"'.format(
-            bucket_name, asset_id
-        )
+    client = boto3.client('s3')
+    client.put_object(
+        Bucket=bucket_name,
+        Key=f"{asset_id}/init/dummy"
     )
-    os.system(
-        'aws s3api put-object --bucket "{}" --key "{}/error/dummy"'.format(
-            bucket_name, asset_id
-        )
+    client.put_object(
+        Bucket=bucket_name,
+        Key=f"{asset_id}/error/dummy"
     )
-    os.system(
-        'aws s3api put-object --bucket "{}" --key "{}/masked/dummy"'.format(
-            bucket_name, asset_id
-        )
+    client.put_object(
+        Bucket=bucket_name,
+        Key=f"{asset_id}/masked/dummy"
     )
-    os.system(
-        'aws s3api put-object --bucket "{}" --key "{}/error/dummy"'.format(
-            bucket_name, asset_id
-        )
-    )
-    os.system(
-        'aws s3api put-object --bucket "{}" --key "{}/logs/dummy"'.format(
-            bucket_name, asset_id
-        )
+    client.put_object(
+        Bucket=bucket_name,
+        Key=f"{asset_id}/logs/dummy"
     )
 
 
@@ -197,43 +189,27 @@ def create_asset(event, context, config, database):
     # API logic here
     # -----------
     asset_id = message_body["asset_id"]
-    data_dataAsset = message_body["asset_info"]
-    data_dataAssetAttributes = message_body["asset_attributes"]
 
-    colData_dataAsset = {
-        "asset_id": asset_id,
-        "src_sys_id": data_dataAsset["src_sys_id"],
-        "target_id": data_dataAsset["target_id"],
-        "file_header": True if data_dataAsset["file_header"] is "true" else False,
-        "multipartition": True if data_dataAsset["multipartition"] is "true" else False,
-        "file_type": data_dataAsset["file_type"],
-        "asset_nm": data_dataAsset["asset_nm"],
-        "source_path": data_dataAsset["source_path"],
-        "target_path": data_dataAsset["target_path"],
-        "file_delim": data_dataAsset["file_delim"],
-        "file_encryption_ind": True if data_dataAsset["file_encryption_ind"] is "true" else False,
-        "athena_table_name": data_dataAsset["athena_table_name"],
-        "asset_owner": data_dataAsset["asset_owner"],
-        "support_cntct": data_dataAsset["support_cntct"],
-        # "modified_ts": "CURRENT_TIMESTAMP"
-    }
-    colData_dataAssetAttributes = list(data_dataAssetAttributes.values())
-    for i in colData_dataAssetAttributes:
+    data_asset = message_body["asset_info"]
+    data_asset["asset_id"] = asset_id
+    # data_asset["modified_ts"] = "CURRENTTIMESTAMP"
+
+    data_asset_attributes = message_body["asset_attributes"]
+    data_asset_attributes = list(data_asset_attributes.values())
+    for i in data_asset_attributes:
         # i["modified_ts"] = "CURRENT_TIMESTAMP"
         i["asset_id"] = asset_id
-        i["req_tokenization"] = True if i["req_tokenization"] is "true" else False
-        i["pk_ind"] = True if i["pk_ind"] is "true" else False
-        i["null_ind"] = True if i["null_ind"] is "true" else False
         i["tgt_col_nm"] = i["col_nm"]
         i["tgt_data_type"] = i["data_type"]
+
     try:
         database.insert(
             table="data_asset",
-            data=colData_dataAsset
+            data=data_asset
         )
         database.insert_many(
             table="data_asset_attributes",
-            data=colData_dataAssetAttributes
+            data=data_asset_attributes
         )
         status = "200"
         body = {
@@ -248,11 +224,28 @@ def create_asset(event, context, config, database):
             "error": f"{e}"
         }
 
-    if status == "200":
-        create_src_s3_dir_str(
-            asset_id=asset_id, message_body=message_body, config=config)
-        set_bucket_event_notification(
-            asset_id=asset_id, message_body=message_body, config=config)
+    finally:
+        if status == "200":
+            try:
+                create_src_s3_dir_str(
+                    asset_id=asset_id, message_body=message_body, config=config)
+            except Exception as e:
+                status = "s3_dir_error"
+                body = {
+                    "error": f"{e}"
+                }
+            try:
+                set_bucket_event_notification(
+                    asset_id=asset_id, message_body=message_body, config=config)
+            except Exception as e:
+                status = "sns_error"
+                body = {
+                    "error": f"{e}"
+                }
+        else:
+            body = {
+                "error": "data insertion unsuccesfull"
+            }
 
     # -----------
 
@@ -435,6 +428,7 @@ def lambda_handler(event, context):
     resource = event["context"]["resource-path"][1:]
     taskType = resource.split("/")[0]
     method = resource.split("/")[1]
+    db = get_database()
 
     print(event)
     print(taskType)
@@ -446,26 +440,22 @@ def lambda_handler(event, context):
 
         elif method == "create":
             global_config = getGlobalParams()
-            db = get_database()
             response = create_asset(
                 event, context, config=global_config, database=db)
             db.close()
             return response
 
         elif method == "read":
-            db = get_database()
             response = read_asset(event, context, database=db)
             db.close()
             return response
 
         elif method == "update":
-            db = get_database()
             response = update_asset(event, context, database=db)
             db.close()
             return response
 
         elif method == "delete":
-            db = get_database()
             response = delete_asset(event, context, database=db)
             db.close()
             return response
