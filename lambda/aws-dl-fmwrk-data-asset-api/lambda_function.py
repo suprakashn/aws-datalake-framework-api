@@ -235,6 +235,7 @@ def update_asset(event, context, database):
 
     asset_id = message_body["asset_id"]
     data_dataAsset = message_body["asset_info"]
+    data_dataAsset["modified_ts"] = "now()"
     data_dataAssetAttributes = message_body["asset_attributes"]
     dataAsset_where = ("asset_id=%s", [asset_id])
 
@@ -245,10 +246,15 @@ def update_asset(event, context, database):
             where=dataAsset_where
         )
         for col in data_dataAssetAttributes.keys():
-            col_id = data_dataAssetAttributes[col]["column_id"]
+            col_id = database.retrieve_dict(
+                table="data_asset_attributes",
+                cols="col_id",
+                where=("col_nm=%s", [col])
+            )[0]["col_id"]
             col_data = {
                 k: v for k, v in data_dataAssetAttributes[col].items() if k != "column_id"
             }
+            col_data["modified_ts"] = "now()"
             dataAssetAttributes_where = (
                 "asset_id=%s and col_id=%s", [asset_id, col_id])
             database.update(
