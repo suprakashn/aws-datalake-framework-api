@@ -158,7 +158,6 @@ def create_asset(event, context, config, database):
     response = insert_event_to_dynamoDb(event, context, api_call_type)
     return{
         "statusCode": status,
-        "sourcePayload": message_body,
         "sourceCodeDynamoDb": response["statusCode"],
         "body": body,
     }
@@ -221,7 +220,6 @@ def read_asset(event, context, database):
     response = insert_event_to_dynamoDb(event, context, api_call_type)
     return{
         "statusCode": status,
-        "sourcePayload": message_body,
         "sourceCodeDynamoDb": response["statusCode"],
         "body": body
     }
@@ -279,7 +277,6 @@ def update_asset(event, context, database):
     response = insert_event_to_dynamoDb(event, context, api_call_type)
     return{
         "statusCode": status,
-        "sourcePayload": message_body,
         "sourceCodeDynamoDb": response["statusCode"],
         "body": body
     }
@@ -323,7 +320,6 @@ def delete_asset(event, context, database):
     response = insert_event_to_dynamoDb(event, context, api_call_type)
     return{
         "statusCode": status,
-        "sourcePayload": message_body,
         "sourceCodeDynamoDb": response["statusCode"],
         "body": body
     }
