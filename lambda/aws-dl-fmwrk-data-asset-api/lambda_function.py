@@ -109,12 +109,12 @@ def create_asset(event, context, config, database):
 
     data_asset = message_body["asset_info"]
     data_asset["asset_id"] = asset_id
-    # data_asset["modified_ts"] = "CURRENTTIMESTAMP"
+    data_asset["modified_ts"] = "now()"
 
     data_asset_attributes = message_body["asset_attributes"]
     data_asset_attributes = list(data_asset_attributes.values())
     for i in data_asset_attributes:
-        # i["modified_ts"] = "CURRENT_TIMESTAMP"
+        i["modified_ts"] = "now()"
         i["asset_id"] = asset_id
         i["tgt_col_nm"] = i["col_nm"]
         i["tgt_data_type"] = i["data_type"]
