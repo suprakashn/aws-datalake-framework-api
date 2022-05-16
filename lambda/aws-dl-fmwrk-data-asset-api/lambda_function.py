@@ -173,39 +173,40 @@ def read_asset(event, context, database):
     # Getting the column info
     if message_body["asset_info"]["columns"] != "*":
         column_dict = message_body["asset_info"]["columns"]
-        assetInfo_columns = list(column_dict.values())
+        asset_columns = list(column_dict.values())
     else:
-        assetInfo_columns = message_body["asset_info"]["columns"]
+        asset_columns = message_body["asset_info"]["columns"]
     if message_body["asset_attributes"]["columns"] != "*":
         column_dict = message_body["asset_attributes"]["columns"]
-        assetAttributes_columns = list(column_dict.values())
+        attributes_columns = list(column_dict.values())
     else:
-        assetAttributes_columns = message_body["asset_attributes"]["columns"]
+        attributes_columns = message_body["asset_attributes"]["columns"]
     # Getting the asset id
     asset_id = message_body["asset_id"]
     # Getting the limit
-    assetAttributes_limit = int(message_body["asset_attributes"]["limit"])
+    assetAttributes_limit = None if (message_body["asset_attributes"]["limit"]).lower() == "none" else int(
+        message_body["asset_attributes"]["limit"])
     # Where clause
     where_clause = ("asset_id=%s", [asset_id])
 
     try:
 
-        dict_dataAsset = database.retrieve_dict(
+        dict_asset = database.retrieve_dict(
             table="data_asset",
-            cols=assetInfo_columns,
+            cols=asset_columns,
             where=where_clause
         )
-        if dict_dataAsset:
-            dict_dataAssetAttributes = database.retrieve_dict(
+        if dict_asset:
+            dict_attributes = database.retrieve_dict(
                 table="data_asset_attributes",
-                cols=assetAttributes_columns,
+                cols=attributes_columns,
                 where=where_clause,
                 limit=assetAttributes_limit
             )
         status = "200"
         body = {
-            "asset_info": dict_dataAsset,
-            "asset_attributes": dict_dataAssetAttributes
+            "asset_info": dict_asset,
+            "asset_attributes": dict_attributes
         }
 
     except Exception as e:
