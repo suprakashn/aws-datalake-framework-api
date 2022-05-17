@@ -109,23 +109,32 @@ def create_asset(event, context, config, database):
 
     data_asset = message_body["asset_info"]
     target_id = data_asset["target_id"]
+    src_sys_id = data_asset["src_sys_id"]
     data_asset["asset_id"] = asset_id
     data_asset["modified_ts"] = "now()"
-    # Getting required data from target table
+    # Getting required data from target and source sys tables
     target_data = database.retrieve_dict(
         table="target_system",
         cols=["subdomain", "bucket_name"],
         where=("target_id=%s", [target_id])
     )[0]
     subdomain = target_data["subdomain"]
-    bucket_name = target_data["bucket_name"]
+    bucket_name_target = target_data["bucket_name"]
+
+    source_data = database.retrieve_dict(
+        table="target_system",
+        cols="bucket_name",
+        where=("target_id=%s", [target_id])
+    )[0]
+    bucket_name_source = source_data["bucket_name"]
 
     athena_table_name = f"{subdomain}_{asset_id}"
-    # source_path = f""
-    target_path = f"s3://{bucket_name}/{subdomain}/{asset_id}/"
+    source_path = f"s3://{bucket_name_source}/{asset_id}/init/"
+    target_path = f"s3://{bucket_name_target}/{subdomain}/{asset_id}/"
 
     data_asset["athena_table_name"] = athena_table_name
     data_asset["target_path"] = target_path
+    data_asset["source_path"] = source_path
 
     data_asset_attributes = message_body["asset_attributes"]
     data_asset_attributes = list(data_asset_attributes.values())
