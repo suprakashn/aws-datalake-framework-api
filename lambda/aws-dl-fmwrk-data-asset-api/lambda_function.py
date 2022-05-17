@@ -122,9 +122,9 @@ def create_asset(event, context, config, database):
     bucket_name_target = target_data["bucket_name"]
 
     source_data = database.retrieve_dict(
-        table="target_system",
+        table="source_system",
         cols="bucket_name",
-        where=("target_id=%s", [target_id])
+        where=("src_sys_id=%s", [src_sys_id])
     )[0]
     bucket_name_source = source_data["bucket_name"]
 
