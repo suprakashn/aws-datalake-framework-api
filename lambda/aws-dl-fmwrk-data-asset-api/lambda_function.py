@@ -107,6 +107,7 @@ def create_asset(event, context, config, database):
     # -----------
     asset_id = message_body["asset_id"]
 
+    # getting asset data
     data_asset = message_body["asset_info"]
     target_id = data_asset["target_id"]
     src_sys_id = data_asset["src_sys_id"]
@@ -136,6 +137,7 @@ def create_asset(event, context, config, database):
     data_asset["target_path"] = target_path
     data_asset["source_path"] = source_path
 
+    # getting attributes data
     data_asset_attributes = message_body["asset_attributes"]
     data_asset_attributes = list(data_asset_attributes.values())
     for i in data_asset_attributes:
@@ -143,6 +145,12 @@ def create_asset(event, context, config, database):
         i["asset_id"] = asset_id
         i["tgt_col_nm"] = i["col_nm"]
         i["tgt_data_type"] = i["data_type"]
+
+    # getting ingestion data
+    ingestion_attributes = message_body["ingestion_attributes"]
+    ingestion_attributes["asset_id"] = asset_id
+    ingestion_attributes["src_sys_id"] = src_sys_id
+    ingestion_attributes["modified_ts"] = "now()"
 
     try:
         database.insert(
@@ -152,6 +160,10 @@ def create_asset(event, context, config, database):
         database.insert_many(
             table="data_asset_attributes",
             data=data_asset_attributes
+        )
+        database.insert(
+            table="data_asset_ingstn_atrbts",
+            data=ingestion_attributes
         )
         status = "200"
         body = {
@@ -206,8 +218,14 @@ def read_asset(event, context, database):
         attributes_columns = list(column_dict.values())
     else:
         attributes_columns = message_body["asset_attributes"]["columns"]
-    # Getting the asset id
+    if message_body["ingestion_attributes"]["columns"] != "*":
+        column_dict = message_body["ingestion_attributes"]["columns"]
+        ingestion_columns = list(column_dict.values())
+    else:
+        ingestion_columns = message_body["ingestion_attributes"]["columns"]
+    # Getting the asset id and source system id
     asset_id = message_body["asset_id"]
+    src_sys_id = message_body["src_sys_id"]
     # Getting the limit
     assetAttributes_limit = None if (message_body["asset_attributes"]["limit"]).lower() == "none" else int(
         message_body["asset_attributes"]["limit"])
@@ -228,10 +246,19 @@ def read_asset(event, context, database):
                 where=where_clause,
                 limit=assetAttributes_limit
             )
+            dict_ingestion = database.retrieve_dict(
+                table="data_asset_ingstn_atrbts",
+                cols=ingestion_columns,
+                where=(
+                    "asset_id=%s and src_sys_id=%s",
+                    [asset_id, src_sys_id]
+                )
+            )
         status = "200"
         body = {
             "asset_info": dict_asset,
-            "asset_attributes": dict_attributes
+            "asset_attributes": dict_attributes,
+            "ingestion_attributes": dict_ingestion
         }
 
     except Exception as e:
@@ -259,41 +286,52 @@ def update_asset(event, context, database):
     # -----------
 
     asset_id = message_body["asset_id"]
-    data_dataAsset = message_body["asset_info"]
-    data_dataAsset["modified_ts"] = "now()"
-    data_dataAssetAttributes = message_body["asset_attributes"]
-    dataAsset_where = ("asset_id=%s", [asset_id])
-
+    src_sys_id = message_body["src_sys_id"]
     try:
-        database.update(
-            table="data_asset",
-            data=data_dataAsset,
-            where=dataAsset_where
-        )
-        for col in data_dataAssetAttributes.keys():
-            col_id = database.retrieve_dict(
-                table="data_asset_attributes",
-                cols="col_id",
-                where=("col_nm=%s", [col])
-            )[0]["col_id"]
-            col_data = {
-                k: v for k, v in data_dataAssetAttributes[col].items() if k != "column_id"
-            }
-            col_data["modified_ts"] = "now()"
-            dataAssetAttributes_where = (
-                "asset_id=%s and col_id=%s", [asset_id, col_id])
-            database.update(
-                table="data_asset_attributes",
-                data=col_data,
-                where=dataAssetAttributes_where
-            )
-        status = "200"
         body = {
-            "updated": {
-                "dataAsset": data_dataAsset,
-                "dataAssetAttributes": data_dataAssetAttributes
-            }
+            "updated": {}
         }
+        if message_body["asset_info"]:
+            data_dataAsset = message_body["asset_info"]
+            data_dataAsset["modified_ts"] = "now()"
+            dataAsset_where = ("asset_id=%s", [asset_id])
+            database.update(
+                table="data_asset",
+                data=data_dataAsset,
+                where=dataAsset_where
+            )
+            body["updated"]["asset_info"] = data_dataAsset
+        if message_body["asset_attributes"]:
+            data_dataAssetAttributes = message_body["asset_attributes"]
+            for col in data_dataAssetAttributes.keys():
+                col_id = database.retrieve_dict(
+                    table="data_asset_attributes",
+                    cols="col_id",
+                    where=("col_nm=%s", [col])
+                )[0]["col_id"]
+                col_data = {
+                    k: v for k, v in data_dataAssetAttributes[col].items() if k != "column_id"
+                }
+                col_data["modified_ts"] = "now()"
+                dataAssetAttributes_where = (
+                    "asset_id=%s and col_id=%s", [asset_id, col_id])
+                database.update(
+                    table="data_asset_attributes",
+                    data=col_data,
+                    where=dataAssetAttributes_where
+                )
+            body["updated"]["asset_attributes"] = data_dataAssetAttributes
+        if message_body["ingestion_attributes"]:
+            data_ingestion = message_body["ingestion_attributes"]
+            ingestion_where = ("asset_id=%s and src_sys_id=%s", [
+                               asset_id, src_sys_id])
+            database.update(
+                table="data_asset_ingstn_atrbts",
+                data=data_ingestion,
+                where=ingestion_where
+            )
+            body["updated"]["ingestion_attributes"] = data_ingestion
+        status = "200"
 
     except Exception as e:
         print(e)
@@ -322,12 +360,20 @@ def delete_asset(event, context, database):
     # -----------
 
     asset_id = message_body["asset_id"]
+    src_sys_id = message_body["src_sys_id"]
     where_clause = ("asset_id=%s", [asset_id])
 
     try:
         database.delete(
             table="data_asset_attributes",
             where=where_clause
+        )
+        database.delete(
+            table="data_asset_ingstn_atrbts",
+            where=(
+                "asset_id=%s and src_sys_id=%s",
+                [asset_id, src_sys_id]
+            )
         )
         database.delete(
             table="data_asset",
