@@ -20,7 +20,7 @@ def get_database():
     return conn
 
 
-def create_src_s3_dir_str(asset_id, message_body, config):
+def create_src_s3_dir_str(asset_id, message_body, config, database):
 
     region = config["primary_region"]
     src_sys_id = message_body["asset_info"]["src_sys_id"]
@@ -44,6 +44,33 @@ def create_src_s3_dir_str(asset_id, message_body, config):
     client.put_object(
         Bucket=bucket_name,
         Key=f"{asset_id}/logs/dummy"
+    )
+
+    # getting trigger mechanism from ingestion attributes table
+    trigger_mechanism = database.retrieve_dict(
+        table="data_asset_ingstn_atrbts",
+        cols="trigger_mechanism",
+        where=("asset_id=%s and src_sys_id=%s", [asset_id, src_sys_id])
+    )[0]["trigger_mechanism"]
+
+    if trigger_mechanism == "time_driven":
+        bucket_name = f"{config['fm_prefix']}-time-drvn-inbound-{region}"
+    else:
+        bucket_name = f"{config['fm_prefix']}-evnt-drvn-inbound-{region}"
+    print(
+        "Creating directory structure in {} bucket".format(bucket_name)
+    )
+    client.put_object(
+        Bucket=bucket_name,
+        Key=f"{src_sys_id}/{asset_id}/init/"
+    )
+    client.put_object(
+        Bucket=bucket_name,
+        Key=f"{src_sys_id}/{asset_id}/processed/"
+    )
+    client.put_object(
+        Bucket=bucket_name,
+        Key=f"{src_sys_id}/{asset_id}/rejected/"
     )
 
 
@@ -182,7 +209,7 @@ def create_asset(event, context, config, database):
         if status == "200":
             try:
                 create_src_s3_dir_str(
-                    asset_id=asset_id, message_body=message_body, config=config)
+                    asset_id=asset_id, message_body=message_body, config=config, database=database)
             except Exception as e:
                 status = "s3_dir_error"
                 body = {
