@@ -26,18 +26,6 @@ Resources:
             SSEAlgorithm: AES256
       BucketName: !Join ["", [!Ref DlFmwrkPrefix, "-", !Ref srcSysId, "-", !Ref CurrentRegion]]
 
-  SourceSystemSNS:
-    Type: AWS::SNS::Topic
-    Properties: 
-      DisplayName: !Join ["", [!Ref DlFmwrkPrefix, "-", !Ref srcSysId, "-", init-file-creation]]
-      Subscription: 
-      - Endpoint: !Join ["", ["arn:aws:lambda:", !Ref CurrentRegion, ":", !Ref AwsAccount, ":function:", !Ref DlFmwrkSrcInfoLambdaName]]
-        Protocol: lambda
-      #Tags: 
-      #- Key: project
-      #  Value: aws-datalake-framework
-      TopicName: !Join ["", [!Ref DlFmwrkPrefix, "-", !Ref srcSysId, "-", init-file-creation]]
-
   SNSPolicy:
     Type: AWS::SNS::TopicPolicy
     DependsOn: SourceSystemSNS
@@ -54,12 +42,12 @@ Resources:
       Topics:
       - !Ref SourceSystemSNS
 
-  LambdaInvokePermission: 
+  LambdaInvokePermission:
     Type: AWS::Lambda::Permission
-    Properties: 
+    Properties:
       Action: lambda:InvokeFunction
       Principal: sns.amazonaws.com
-      SourceArn:  !Ref SourceSystemSNS 
+      SourceArn:  !Ref SourceSystemSNS
       FunctionName: !Join ["", ["arn:aws:lambda:", !Ref CurrentRegion, ":", !Ref AwsAccount, ":function:", !Ref DlFmwrkSrcInfoLambdaName]]
 
 
@@ -80,4 +68,3 @@ Resources:
   #  Type: AWS::IAM::AccessKey
   #  Properties:
   #    UserName: !Ref SourceSystemIamUser
-    
