@@ -67,6 +67,36 @@ def create_src_s3_dir_str(asset_id, message_body, config, mechanism):
     )
 
 
+def glue_airflow_trigger(source_id, asset_id, schedule):
+    s3_client = boto3.client("s3")
+    template_bucket = 'dl-fmwrk-code-us-east-2'
+    airflow_bucket = 'dl-fmwrk-mwaa-us-east-2'
+
+    template_object_key = "airflow-template/dl_fmwrk_dag_template.py"
+    dag_id = f"{source_id}_{asset_id}_worflow"
+    file_name = f"dags/{source_id}_{asset_id}_worflow.py"
+
+    file_content = s3_client.get_object(
+        Bucket=template_bucket, Key=template_object_key)["Body"].read()
+    file_content = file_content.decode()
+
+    file_content = file_content.replace("src_sys_id_placeholder", source_id)
+    file_content = file_content.replace("ast_id_placeholder", asset_id)
+    file_content = file_content.replace("dag_id_placeholder", dag_id)
+    if schedule == "None":
+        file_content = file_content.replace('"schedule_placeholder"', "None")
+    else:
+        file_content = file_content.replace("schedule_placeholder", schedule)
+
+    file = bytes(file_content, encoding='utf-8')
+    s3_client.put_object(Bucket=airflow_bucket, Body=file, Key=file_name)
+
+    return {
+        'statusCode': 200,
+        'body': f"Upload succeeded: {file_name} has been uploaded to Amazon S3 in bucket {airflow_bucket}"
+    }
+
+
 def insert_event_to_dynamoDb(event, context, api_call_type, status="success", op_type="insert"):
     cur_time = datetime.now()
     aws_request_id = context.aws_request_id
@@ -203,9 +233,31 @@ def create_asset(event, context, config, database):
         if status == "200":
             try:
                 create_src_s3_dir_str(
-                    asset_id=asset_id, message_body=message_body, config=config, mechanism=trigger_mechanism)
+                    asset_id=asset_id,
+                    message_body=message_body,
+                    config=config,
+                    mechanism=trigger_mechanism
+                )
+                body["s3_dir_creation"] = "success"
             except Exception as e:
                 status = "s3_dir_error"
+                body = {
+                    "error": f"{e}"
+                }
+        if status == "200":
+            try:
+                if "schedule" in event.keys():
+                    schedule = event['schedule']
+                else:
+                    schedule = "None"
+                response = glue_airflow_trigger(
+                    asset_id=asset_id,
+                    source_id=src_sys_id,
+                    schedule=schedule
+                )
+                body["airflow"] = response
+            except Exception as e:
+                status = "airflow_error"
                 body = {
                     "error": f"{e}"
                 }
@@ -312,7 +364,8 @@ def update_asset(event, context, database):
         body = {
             "updated": {}
         }
-        if message_body["asset_info"]:
+        message_keys = message_body.keys()
+        if "asset_info" in message_keys:
             data_dataAsset = message_body["asset_info"]
             data_dataAsset["modified_ts"] = "now()"
             dataAsset_where = ("asset_id=%s", [asset_id])
@@ -322,7 +375,7 @@ def update_asset(event, context, database):
                 where=dataAsset_where
             )
             body["updated"]["asset_info"] = data_dataAsset
-        if message_body["asset_attributes"]:
+        if "asset_attributes" in message_keys:
             data_dataAssetAttributes = message_body["asset_attributes"]
             for col in data_dataAssetAttributes.keys():
                 col_id = database.retrieve_dict(
@@ -342,7 +395,7 @@ def update_asset(event, context, database):
                     where=dataAssetAttributes_where
                 )
             body["updated"]["asset_attributes"] = data_dataAssetAttributes
-        if message_body["ingestion_attributes"]:
+        if "ingestion_attributes" in message_keys:
             data_ingestion = message_body["ingestion_attributes"]
             ingestion_where = ("asset_id=%s and src_sys_id=%s", [
                                asset_id, src_sys_id])
