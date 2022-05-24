@@ -285,27 +285,44 @@ def read_asset(event, context, database):
     # -----------
 
     # Getting the column info
-    if message_body["asset_info"]["columns"] != "*":
-        column_dict = message_body["asset_info"]["columns"]
-        asset_columns = list(column_dict.values())
+    message_keys = message_body.keys()
+    if "asset_info" and "asset_attributes" and "ingestion_attributes" not in message_keys:
+        asset_columns = "*"
+        attributes_columns = "*"
+        ingestion_columns = "*"
+        assetAttributes_limit = None
     else:
-        asset_columns = message_body["asset_info"]["columns"]
-    if message_body["asset_attributes"]["columns"] != "*":
-        column_dict = message_body["asset_attributes"]["columns"]
-        attributes_columns = list(column_dict.values())
-    else:
-        attributes_columns = message_body["asset_attributes"]["columns"]
-    if message_body["ingestion_attributes"]["columns"] != "*":
-        column_dict = message_body["ingestion_attributes"]["columns"]
-        ingestion_columns = list(column_dict.values())
-    else:
-        ingestion_columns = message_body["ingestion_attributes"]["columns"]
+        if "asset_info" in message_keys:
+            if message_body["asset_info"]["columns"] != "*":
+                column_dict = message_body["asset_info"]["columns"]
+                asset_columns = list(column_dict.values())
+            else:
+                asset_columns = message_body["asset_info"]["columns"]
+        else:
+            asset_columns = "*"
+        if "asset_attributes" in message_keys:
+            if message_body["asset_attributes"]["columns"] != "*":
+                column_dict = message_body["asset_attributes"]["columns"]
+                attributes_columns = list(column_dict.values())
+            else:
+                attributes_columns = message_body["asset_attributes"]["columns"]
+            # Getting the limit
+            assetAttributes_limit = None if (message_body["asset_attributes"]["limit"]).lower() == "none" else int(
+                message_body["asset_attributes"]["limit"])
+        else:
+            attributes_columns = "*"
+            assetAttributes_limit = None
+        if "ingestion_attributes" in message_keys:
+            if message_body["ingestion_attributes"]["columns"] != "*":
+                column_dict = message_body["ingestion_attributes"]["columns"]
+                ingestion_columns = list(column_dict.values())
+            else:
+                ingestion_columns = message_body["ingestion_attributes"]["columns"]
+        else:
+            ingestion_columns = "*"
     # Getting the asset id and source system id
     asset_id = message_body["asset_id"]
     src_sys_id = message_body["src_sys_id"]
-    # Getting the limit
-    assetAttributes_limit = None if (message_body["asset_attributes"]["limit"]).lower() == "none" else int(
-        message_body["asset_attributes"]["limit"])
     # Where clause
     where_clause = ("asset_id=%s", [asset_id])
 
@@ -331,11 +348,30 @@ def read_asset(event, context, database):
                     [asset_id, src_sys_id]
                 )
             )
+
         status = "200"
         body = {
-            "asset_info": dict_asset,
-            "asset_attributes": dict_attributes,
-            "ingestion_attributes": dict_ingestion
+            "asset_info": json.loads(
+                json.dumps(
+                    dict_asset,
+                    separators=(',', ':'),
+                    default=str
+                )
+            ),
+            "asset_attributes": json.loads(
+                json.dumps(
+                    dict_attributes,
+                    separators=(',', ':'),
+                    default=str
+                )
+            ),
+            "ingestion_attributes": json.loads(
+                json.dumps(
+                    dict_ingestion,
+                    separators=(',', ':'),
+                    default=str
+                )
+            )
         }
 
     except Exception as e:
