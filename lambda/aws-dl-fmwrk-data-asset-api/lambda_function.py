@@ -5,7 +5,7 @@ import os
 import json
 from datetime import datetime
 from connector import Connector
-from random import randrange
+from random import randint
 
 
 def getGlobalParams():
@@ -22,7 +22,9 @@ def get_database():
 
 
 def generate_asset_id(n):
-    return int(f'{randrange(1, 10**n):03}')
+    range_start = 10**(n-1)
+    range_end = (10**n)-1
+    return randint(range_start, range_end)
 
 
 def create_src_s3_dir_str(asset_id, message_body, config, mechanism):
