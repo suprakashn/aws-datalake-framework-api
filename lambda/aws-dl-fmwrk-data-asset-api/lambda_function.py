@@ -164,6 +164,7 @@ def create_asset(event, context, config, database):
     # -----------
     asset_id = str(generate_asset_id(10))
     trigger_mechanism = message_body["ingestion_attributes"]["trigger_mechanism"]
+    freq = message_body["ingestion_attributes"]["frequency"]
 
     # getting asset data
     data_asset = message_body["asset_info"]
@@ -253,14 +254,10 @@ def create_asset(event, context, config, database):
                 }
         if status == "200":
             try:
-                if "schedule" in event.keys():
-                    schedule = event['schedule']
-                else:
-                    schedule = "None"
                 response = glue_airflow_trigger(
                     asset_id=asset_id,
                     source_id=src_sys_id,
-                    schedule=schedule
+                    schedule=freq
                 )
                 body["airflow"] = response
             except Exception as e:
