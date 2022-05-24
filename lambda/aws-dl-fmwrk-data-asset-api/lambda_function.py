@@ -5,6 +5,7 @@ import os
 import json
 from datetime import datetime
 from connector import Connector
+from random import randrange
 
 
 def getGlobalParams():
@@ -18,6 +19,10 @@ def get_database():
     db_region = os.environ['secret_region']
     conn = Connector(secret=db_secret, region=db_region, autocommit=False)
     return conn
+
+
+def generate_asset_id(n):
+    return int(f'{randrange(1, 10**n):03}')
 
 
 def create_src_s3_dir_str(asset_id, message_body, config, mechanism):
@@ -155,7 +160,7 @@ def create_asset(event, context, config, database):
 
     # API logic here
     # -----------
-    asset_id = message_body["asset_id"]
+    asset_id = str(generate_asset_id(10))
     trigger_mechanism = message_body["ingestion_attributes"]["trigger_mechanism"]
 
     # getting asset data
