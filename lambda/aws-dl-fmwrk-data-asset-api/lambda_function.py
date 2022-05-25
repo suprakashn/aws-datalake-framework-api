@@ -198,7 +198,6 @@ def create_asset(event, context, config, database):
 
     # getting attributes data
     data_asset_attributes = message_body["asset_attributes"]
-    data_asset_attributes = list(data_asset_attributes.values())
     for i in data_asset_attributes:
         i["modified_ts"] = "now()"
         i["asset_id"] = asset_id
@@ -417,21 +416,14 @@ def update_asset(event, context, database):
             body["updated"]["asset_info"] = data_dataAsset
         if "asset_attributes" in message_keys:
             data_dataAssetAttributes = message_body["asset_attributes"]
-            for col in data_dataAssetAttributes.keys():
-                col_id = database.retrieve_dict(
-                    table="data_asset_attributes",
-                    cols="col_id",
-                    where=("col_nm=%s", [col])
-                )[0]["col_id"]
-                col_data = {
-                    k: v for k, v in data_dataAssetAttributes[col].items() if k != "column_id"
-                }
-                col_data["modified_ts"] = "now()"
+            for data in data_dataAssetAttributes:
+                col_id = data["col_id"]
+                data["modified_ts"] = "now()"
                 dataAssetAttributes_where = (
                     "asset_id=%s and col_id=%s", [asset_id, col_id])
                 database.update(
                     table="data_asset_attributes",
-                    data=col_data,
+                    data=data,
                     where=dataAssetAttributes_where
                 )
             body["updated"]["asset_attributes"] = data_dataAssetAttributes
