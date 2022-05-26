@@ -1,4 +1,5 @@
 import json
+import boto3
 from utils import generate_asset_id, create_src_s3_dir_str, glue_airflow_trigger, insert_event_to_dynamoDb, get_database, getGlobalParams
 
 
@@ -340,6 +341,15 @@ def delete_asset(event, context, database):
         body = {
             "deleted_asset": asset_id
         }
+
+        if status == "200":
+            bucket_name = "dl-fmwrk-mwaa-us-east-2"
+            file_name = f"dags/{src_sys_id}_{asset_id}_worflow.py"
+            client = boto3.client('s3')
+            client.delete_object(
+                Bucket=bucket_name,
+                Key=file_name
+            )
 
     except Exception as e:
         print(e)
