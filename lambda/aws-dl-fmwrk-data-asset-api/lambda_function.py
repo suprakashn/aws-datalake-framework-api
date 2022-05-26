@@ -254,9 +254,6 @@ def update_asset(event, context, database):
     asset_id = message_body["asset_id"]
     src_sys_id = message_body["src_sys_id"]
     try:
-        body = {
-            "updated": {}
-        }
         message_keys = message_body.keys()
         if "asset_info" in message_keys:
             data_dataAsset = message_body["asset_info"]
@@ -267,7 +264,6 @@ def update_asset(event, context, database):
                 data=data_dataAsset,
                 where=dataAsset_where
             )
-            body["updated"]["asset_info"] = data_dataAsset
         if "asset_attributes" in message_keys:
             data_dataAssetAttributes = message_body["asset_attributes"]
             for data in data_dataAssetAttributes:
@@ -280,7 +276,6 @@ def update_asset(event, context, database):
                     data=data,
                     where=dataAssetAttributes_where
                 )
-            body["updated"]["asset_attributes"] = data_dataAssetAttributes
         if "ingestion_attributes" in message_keys:
             data_ingestion = message_body["ingestion_attributes"]
             ingestion_where = ("asset_id=%s and src_sys_id=%s", [
@@ -290,8 +285,10 @@ def update_asset(event, context, database):
                 data=data_ingestion,
                 where=ingestion_where
             )
-            body["updated"]["ingestion_attributes"] = data_ingestion
         status = "200"
+        body = {
+            "assetId_updated": asset_id
+        }
 
     except Exception as e:
         print(e)
