@@ -33,8 +33,8 @@ def create_source(db, event, context):
         # create folder structure in time and event driven buckets
         time_drvn_bkt = f"{global_config['fm_prefix']}-time-drvn-inbound-{region}"
         event_drvn_bkt = f"{global_config['fm_prefix']}-evnt-drvn-inbound-{region}"
-        create_folder_structure(time_drvn_bkt, src_sys_id)
-        create_folder_structure(event_drvn_bkt, src_sys_id)
+        create_time_driven_structure(time_drvn_bkt, src_sys_id)
+        create_event_driven_structure(event_drvn_bkt, src_sys_id)
 
         # Create source system bucket
         # create_src_bucket(bucket_name, region)
@@ -52,10 +52,12 @@ def create_source(db, event, context):
         # 2. Upload the ingestion DB password to DB secrets
         if message_body["ingestion_config"]:
             ingestion_data = message_body["ingestion_config"]
-            store_status = store_ingestion_attributes(
-                src_sys_id, bucket_name, ingestion_data, ingestion_table, db, region
-            )
-            api_response["body"]["store_ingestion_attributes"] = store_status
+        else:
+            ingestion_data = default_ingestion_data(src_sys_id, bucket_name)
+        store_status = store_ingestion_attributes(
+            src_sys_id, bucket_name, ingestion_data, ingestion_table, db, region
+        )
+        api_response["body"]["store_ingestion_attributes"] = store_status
 
         # add the appropriate api response
         api_response["body"]["result"] = "Success"
@@ -192,10 +194,7 @@ def lambda_handler(event, context):
     db_secret = os.environ["db_secret"]
     db_region = os.environ["db_region"]
     db = Connector(db_secret, db_region, autocommit=True)
-
-    print(event)
-    print(taskType)
-    print(method)
+    print(taskType, method)
     try:
         if event:
             if method == "health":

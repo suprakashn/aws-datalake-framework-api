@@ -120,7 +120,7 @@ def run_cft(global_config, src_sys_id, region):
 
 
 def insert_event_to_dynamoDb(
-    event, context, api_call_type, status="success", op_type="insert"
+        event, context, api_call_type, status="success", op_type="insert"
 ):
     cur_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     aws_request_id = context.aws_request_id
@@ -164,15 +164,15 @@ def insert_event_to_dynamoDb(
 
     if response["ResponseMetadata"]["HTTPStatusCode"] == 200:
         body = (
-            "Insert/Update of the event with aws_request_id="
-            + aws_request_id
-            + " completed successfully"
+                "Insert/Update of the event with aws_request_id="
+                + aws_request_id
+                + " completed successfully"
         )
     else:
         body = (
-            "Insert/Update of the event with aws_request_id="
-            + aws_request_id
-            + " failed"
+                "Insert/Update of the event with aws_request_id="
+                + aws_request_id
+                + " failed"
         )
 
     return {
@@ -181,7 +181,19 @@ def insert_event_to_dynamoDb(
     }
 
 
-def create_folder_structure(bucket, src_id):
+def create_event_driven_structure(bucket, src_id):
+    client = boto3.client("s3")
+    dummy_file = "dummy.txt"
+    init_key = f"init/{src_id}/{dummy_file}"
+    processed_key = f"processed/{src_id}/{dummy_file}"
+    rejected_key = f"rejected/{src_id}/{dummy_file}"
+    body = b"Creating the folder structure"
+    client.put_object(Body=body, Bucket=bucket, Key=init_key)
+    client.put_object(Body=body, Bucket=bucket, Key=processed_key)
+    client.put_object(Body=body, Bucket=bucket, Key=rejected_key)
+
+
+def create_time_driven_structure(bucket, src_id):
     client = boto3.client("s3")
     dummy_file = "dummy.txt"
     KeyFileName = f"{src_id}/{dummy_file}"
@@ -225,8 +237,23 @@ def store_secret(db_secret, src_sys_id, region):
     return store_status
 
 
+def default_ingestion_data(src_sys_id, bucket):
+    ing_attributes = {
+        'src_sys_id': src_sys_id,
+        'ingstn_pattern': 'Not Available',
+        'db_type': 'Not Available',
+        'db_hostname': 'Not Available',
+        'db_username': 'Not Available',
+        'db_schema': 'Not Available',
+        'db_port': 'Not Available',
+        'ingstn_src_bckt_nm': bucket,
+        'db_name': 'Not Available'
+    }
+    return ing_attributes
+
+
 def store_ingestion_attributes(
-    src_sys_id, bucket_name, ingestion_data, ingestion_table, db, region
+        src_sys_id, bucket_name, ingestion_data, ingestion_table, db, region
 ):
     store_status = ""
     ingestion_data["src_sys_id"] = src_sys_id
