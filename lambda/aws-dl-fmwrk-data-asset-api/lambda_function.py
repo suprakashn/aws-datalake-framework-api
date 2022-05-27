@@ -304,7 +304,7 @@ def delete_asset(event, context, database):
         )
         status = "200"
         body = {
-            "deleted_asset": asset_id
+            "assetId_deleted": asset_id
         }
 
         if status == "200":
