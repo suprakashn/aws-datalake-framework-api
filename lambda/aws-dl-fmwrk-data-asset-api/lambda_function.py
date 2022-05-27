@@ -32,7 +32,14 @@ def create_asset(event, context, config, database):
         where=("src_sys_id=%s", [src_sys_id])
     )[0]["ingstn_pattern"]
     if ingestion_pattern == "file":
-        ingestion_attributes["ingstn_src_path"] = f"init/{src_sys_id}/{asset_id}/"
+        if trigger_mechanism == "time_driven":
+            ingestion_attributes[
+                "ingstn_src_path"
+            ] = f"s3://dl-fmwrk-time-drvn-inbound-us-east-2/init/{src_sys_id}/{asset_id}/"
+        else:
+            ingestion_attributes[
+                "ingstn_src_path"
+            ] = f"s3://dl-fmwrk-evnt-drvn-inbound-us-east-2/init/{src_sys_id}/{asset_id}/"
 
     # Getting required data from target and source sys tables
     target_data = database.retrieve_dict(
