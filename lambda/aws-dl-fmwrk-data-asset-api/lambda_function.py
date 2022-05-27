@@ -130,50 +130,9 @@ def read_asset(event, context, database):
     # API logic here
     # -----------
 
-    # Getting the column info
-    message_keys = message_body.keys()
-    if "asset_info" and "asset_attributes" and "ingestion_attributes" not in message_keys:
-        asset_columns = "*"
-        attributes_columns = "*"
-        ingestion_columns = "*"
-        assetAttributes_limit = None
-    else:
-        if "asset_info" in message_keys:
-            if message_body["asset_info"] != "*":
-                column_dict = message_body["asset_info"]
-                asset_columns = column_dict
-            else:
-                asset_columns = message_body["asset_info"]
-        else:
-            asset_columns = "*"
-        if "asset_attributes" in message_keys:
-            if message_body["asset_attributes"] != "*":
-                column_dict = message_body["asset_attributes"]
-                attributes_columns = column_dict
-            else:
-                attributes_columns = message_body["asset_attributes"]
-            # Getting the limit
-            if "limit_attributes" in message_body.keys():
-                assetAttributes_limit = None if (message_body["limit_attributes"]).lower() == "none" else int(
-                    message_body["limit_attributes"])
-            else:
-                assetAttributes_limit = None
-        else:
-            attributes_columns = "*"
-            # Getting the limit
-            if "limit_attributes" in message_body.keys():
-                assetAttributes_limit = None if (message_body["limit_attributes"]).lower() == "none" else int(
-                    message_body["limit_attributes"])
-            else:
-                assetAttributes_limit = None
-        if "ingestion_attributes" in message_keys:
-            if message_body["ingestion_attributes"] != "*":
-                column_dict = message_body["ingestion_attributes"]
-                ingestion_columns = column_dict
-            else:
-                ingestion_columns = message_body["ingestion_attributes"]
-        else:
-            ingestion_columns = "*"
+    asset_columns = "*"
+    attributes_columns = "*"
+    ingestion_columns = "*"
     # Getting the asset id and source system id
     asset_id = message_body["asset_id"]
     src_sys_id = message_body["src_sys_id"]
@@ -186,13 +145,12 @@ def read_asset(event, context, database):
             table="data_asset",
             cols=asset_columns,
             where=where_clause
-        )
+        )[0]
         if dict_asset:
             dict_attributes = database.retrieve_dict(
                 table="data_asset_attributes",
                 cols=attributes_columns,
-                where=where_clause,
-                limit=assetAttributes_limit
+                where=where_clause
             )
             dict_ingestion = database.retrieve_dict(
                 table="data_asset_ingstn_atrbts",
@@ -201,7 +159,7 @@ def read_asset(event, context, database):
                     "asset_id=%s and src_sys_id=%s",
                     [asset_id, src_sys_id]
                 )
-            )
+            )[0]
 
         status = "200"
         body = {
