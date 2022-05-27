@@ -19,6 +19,21 @@ def create_asset(event, context, config, database):
     src_sys_id = data_asset["src_sys_id"]
     data_asset["asset_id"] = asset_id
     data_asset["modified_ts"] = "now()"
+
+    # getting ingestion data
+    ingestion_attributes = message_body["ingestion_attributes"]
+    ingestion_attributes["asset_id"] = asset_id
+    ingestion_attributes["src_sys_id"] = src_sys_id
+    ingestion_attributes["modified_ts"] = "now()"
+    # Getting required data from source_system_ingstn_atrbts table
+    ingestion_pattern = database.retrieve_dict(
+        table="source_system_ingstn_atrbts",
+        cols="ingstn_pattern",
+        where=("src_sys_id=%s", [src_sys_id])
+    )[0]["ingstn_pattern"]
+    if ingestion_pattern == "file":
+        ingestion_attributes["ingstn_src_path"] = f"init/{src_sys_id}/{asset_id}/"
+
     # Getting required data from target and source sys tables
     target_data = database.retrieve_dict(
         table="target_system",
@@ -50,12 +65,6 @@ def create_asset(event, context, config, database):
         i["asset_id"] = asset_id
         i["tgt_col_nm"] = i["col_nm"]
         i["tgt_data_type"] = i["data_type"]
-
-    # getting ingestion data
-    ingestion_attributes = message_body["ingestion_attributes"]
-    ingestion_attributes["asset_id"] = asset_id
-    ingestion_attributes["src_sys_id"] = src_sys_id
-    ingestion_attributes["modified_ts"] = "now()"
 
     try:
         database.insert(
@@ -92,7 +101,6 @@ def create_asset(event, context, config, database):
                     config=config,
                     mechanism=trigger_mechanism
                 )
-                body["s3_dir_creation"] = "success"
             except Exception as e:
                 status = "s3_dir_error"
                 body = {
@@ -105,7 +113,6 @@ def create_asset(event, context, config, database):
                     source_id=src_sys_id,
                     schedule=freq
                 )
-                body["airflow"] = response
             except Exception as e:
                 status = "airflow_error"
                 body = {
