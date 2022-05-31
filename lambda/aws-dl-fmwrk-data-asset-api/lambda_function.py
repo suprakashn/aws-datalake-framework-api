@@ -1,6 +1,6 @@
 import json
 import boto3
-from utils import generate_asset_id, create_src_s3_dir_str, glue_airflow_trigger, insert_event_to_dynamoDb, get_database, getGlobalParams
+from utils import *
 
 
 def create_asset(event, context, config, database):
