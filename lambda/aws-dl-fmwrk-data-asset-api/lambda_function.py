@@ -144,9 +144,46 @@ def read_asset(event, context, database):
     # API logic here
     # -----------
 
-    asset_columns = "*"
-    attributes_columns = "*"
-    ingestion_columns = "*"
+    asset_columns = [
+        "asset_id",
+        "src_sys_id",
+        "target_id",
+        "file_header",
+        "multipartition",
+        "file_type",
+        "asset_nm",
+        "source_path",
+        "target_path",
+        "trigger_file_pattern",
+        "file_delim",
+        "file_encryption_ind",
+        "athena_table_name",
+        "asset_owner",
+        "support_cntct"
+    ]
+    attributes_columns = [
+        "col_id",
+        "asset_id",
+        "col_nm",
+        "col_desc",
+        "data_classification",
+        "col_length",
+        "req_tokenization",
+        "pk_ind",
+        "null_ind",
+        "data_type",
+        "tgt_col_nm",
+        "tgt_data_type"
+    ]
+    ingestion_columns = [
+        "asset_id",
+        "src_sys_id",
+        "src_table_name",
+        "src_sql_query",
+        "ingstn_src_path",
+        "trigger_mechanism",
+        "frequency"
+    ]
     # Getting the asset id and source system id
     asset_id = message_body["asset_id"]
     src_sys_id = message_body["src_sys_id"]
@@ -177,27 +214,9 @@ def read_asset(event, context, database):
 
         status = "200"
         body = {
-            "asset_info": json.loads(
-                json.dumps(
-                    dict_asset,
-                    separators=(',', ':'),
-                    default=str
-                )
-            ),
-            "asset_attributes": json.loads(
-                json.dumps(
-                    dict_attributes,
-                    separators=(',', ':'),
-                    default=str
-                )
-            ),
-            "ingestion_attributes": json.loads(
-                json.dumps(
-                    dict_ingestion,
-                    separators=(',', ':'),
-                    default=str
-                )
-            )
+            "asset_info": dict_asset,
+            "asset_attributes": dict_attributes,
+            "ingestion_attributes": dict_ingestion
         }
 
     except Exception as e:
