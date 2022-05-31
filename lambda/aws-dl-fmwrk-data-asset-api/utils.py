@@ -60,15 +60,15 @@ def create_src_s3_dir_str(asset_id, message_body, config, mechanism):
     )
     client.put_object(
         Bucket=bucket_name,
-        Key=f"{src_sys_id}/{asset_id}/init/"
+        Key=f"init/{src_sys_id}/{asset_id}/dummy"
     )
     client.put_object(
         Bucket=bucket_name,
-        Key=f"{src_sys_id}/{asset_id}/processed/"
+        Key=f"processed/{src_sys_id}/{asset_id}/dummy"
     )
     client.put_object(
         Bucket=bucket_name,
-        Key=f"{src_sys_id}/{asset_id}/rejected/"
+        Key=f"rejected/{src_sys_id}/{asset_id}/dummy"
     )
 
 
