@@ -77,7 +77,7 @@ def glue_airflow_trigger(source_id, asset_id, schedule):
     template_bucket = 'dl-fmwrk-code-us-east-2'
     airflow_bucket = 'dl-fmwrk-mwaa-us-east-2'
 
-    template_object_key = "airflow-template/dl_fmwrk_dag_template.py"
+    template_object_key = "aws-datalake-framework-ingestion/airflow/template/dl_fmwrk_dag_template.py"
     dag_id = f"{source_id}_{asset_id}_worflow"
     file_name = f"dags/{source_id}_{asset_id}_worflow.py"
 
