@@ -276,6 +276,18 @@ def update_asset(event, context, database):
                 data=data_ingestion,
                 where=ingestion_where
             )
+            # Deleting previous dag
+            client = boto3.client("s3")
+            airflow_bucket = 'dl-fmwrk-mwaa-us-east-2'
+            file_name = f"dags/{src_sys_id}_{asset_id}_worflow.py"
+            client.delete_object(Bucket=airflow_bucket, Key=file_name)
+            # Creating new dag
+            freq = message_body["ingestion_attributes"]["frequency"]
+            glue_airflow_trigger(
+                source_id=src_sys_id,
+                asset_id=asset_id,
+                schedule=freq
+            )
         status = "200"
         body = {
             "assetId_updated": asset_id
