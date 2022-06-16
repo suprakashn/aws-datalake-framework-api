@@ -325,6 +325,13 @@ def delete_asset(event, context, database):
 
     try:
         database.delete(
+            table="data_asset_catalogs",
+            where=(
+                "asset_id=%s and src_sys_id=%s",
+                [asset_id, src_sys_id]
+            )
+        )
+        database.delete(
             table="data_asset_attributes",
             where=where_clause
         )
