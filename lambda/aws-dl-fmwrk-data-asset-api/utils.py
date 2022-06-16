@@ -78,8 +78,8 @@ def glue_airflow_trigger(source_id, asset_id, schedule):
     airflow_bucket = 'dl-fmwrk-mwaa-us-east-2'
 
     template_object_key = "aws-datalake-framework-ingestion/airflow/template/dl_fmwrk_dag_template.py"
-    dag_id = f"{source_id}_{asset_id}_worflow"
-    file_name = f"dags/{source_id}_{asset_id}_worflow.py"
+    dag_id = f"{source_id}_{asset_id}_workflow"
+    file_name = f"dags/{source_id}_{asset_id}_workflow.py"
 
     file_content = s3_client.get_object(
         Bucket=template_bucket, Key=template_object_key)["Body"].read()
