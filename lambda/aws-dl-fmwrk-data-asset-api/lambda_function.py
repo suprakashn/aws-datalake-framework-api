@@ -10,7 +10,9 @@ def create_asset(event, context, config, database):
     # -----------
     asset_id = str(generate_asset_id(10))
     trigger_mechanism = message_body["ingestion_attributes"]["trigger_mechanism"]
-    freq = message_body["ingestion_attributes"]["frequency"]
+    freq = message_body["ingestion_attributes"]["frequency"] if "frequency" in message_body["ingestion_attributes"].keys(
+    ) else "None"
+    asset_nm = message_body["asset_info"]["asset_nm"]
 
     # getting asset data
     data_asset = message_body["asset_info"]
@@ -56,7 +58,7 @@ def create_asset(event, context, config, database):
     )[0]
     bucket_name_source = source_data["bucket_name"]
 
-    athena_table_name = f"{subdomain}_{asset_id}"
+    athena_table_name = f"{subdomain}_{asset_nm}"
     source_path = f"s3://{bucket_name_source}/{asset_id}/init/"
     target_path = f"s3://{bucket_name_target}/{subdomain}/{asset_id}/"
 
@@ -69,8 +71,10 @@ def create_asset(event, context, config, database):
     for i in data_asset_attributes:
         i["modified_ts"] = "now()"
         i["asset_id"] = asset_id
-        i["tgt_col_nm"] = i["col_nm"]
-        i["tgt_data_type"] = i["data_type"]
+        i["tgt_col_nm"] = i["col_nm"] if str(
+            i["tgt_col_nm"]).lower() == "none" else i["tgt_col_nm"]
+        i["tgt_data_type"] = i["data_type"] if str(
+            i["tgt_data_type"]).lower() == "none" else i["tgt_data_type"]
 
     try:
         database.insert(
@@ -353,7 +357,7 @@ def delete_asset(event, context, database):
 
         if status == "200":
             bucket_name = "dl-fmwrk-mwaa-us-east-2"
-            file_name = f"dags/{src_sys_id}_{asset_id}_worflow.py"
+            file_name = f"dags/{src_sys_id}_{asset_id}_workflow.py"
             client = boto3.client('s3')
             client.delete_object(
                 Bucket=bucket_name,
