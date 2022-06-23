@@ -1,0 +1,27 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+  CurrentRegion:
+    Type: String
+    Default: us-east-1
+  DlFmwrkPrefix:
+    Type: String
+    Default: dl-fmwrk
+  AwsAccount:
+    Type: String
+    Default: "076931226898"
+  DlFmwrkSrcInfoLambdaName:
+    Type: String
+    Default: dlFmwrkSrcDataInfo
+  tgtSysId:
+    Type: Number
+    Default: 99999999
+
+Resources:
+  SourceSystemS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: AES256
+      BucketName: !Join ["", [!Ref DlFmwrkPrefix, "-", !Ref tgtSysId, "-", !Ref CurrentRegion]]

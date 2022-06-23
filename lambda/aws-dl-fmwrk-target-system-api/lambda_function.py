@@ -1,162 +1,144 @@
-import boto3
-import os
-import json
-from datetime import datetime
+from connector import Connector
+from utils import *
 
-def insert_event_to_dynamoDb(event, context, api_call_type, status="success", op_type="insert"):
-  cur_time = datetime.now()
-  aws_request_id = context.aws_request_id
-  log_group_name = context.log_group_name
-  log_stream_name = context.log_stream_name
-  function_name = context.function_name
-  method_name = event["context"]["resource-path"]
-  query_string = event["params"]["querystring"]
-  payload = event["body-json"]
-
-  client = boto3.resource("dynamodb")
-  table = client.Table("aws-dl-fmwrk-api-events")
-
-  if op_type == "insert":
-      response = table.put_item(
-          Item={
-              "aws_request_id": aws_request_id,
-              "method_name": method_name,
-              "log_group_name": log_group_name,
-              "log_stream_name": log_stream_name,
-              "function_name": function_name,
-              "query_string": query_string,
-              "payload": payload,
-              "api_call_type": api_call_type,
-              "modified ts": str(cur_time),
-              "status": status,
-          })
-  else:
-      response = table.update_item(
-        Key={
-          'aws_request_id': aws_request_id,
-          'method_name': method_name,
-        },
-        ConditionExpression="attribute_exists(aws_request_id)",
-        UpdateExpression='SET status = :val1',
-        ExpressionAttributeValues = {
-          ':val1': status,
-        }
-      )
-
-  if response["ResponseMetadata"]["HTTPStatusCode"] == 200:
-    body = "Insert/Update of the event with aws_request_id=" + aws_request_id + " completed successfully"
-  else:
-    body = "Insert/Update of the event with aws_request_id=" + aws_request_id + " failed"
-
-  return {
-      "statusCode": response["ResponseMetadata"]["HTTPStatusCode"],
-      "body": body,
-  }
-
-def create_target(event, context):
-  message_body = event["body-json"]
-  api_call_type = "synchronous"
+config_file_path = "config/globalConfig.json"
+file = open(file=config_file_path, mode="r")
+global_config = json.load(file)
+file.close()
 
 
-  # API logic here
-  # -----------
-
-  # -----------
-
-  # API event entry in dynamoDb
-  response = insert_event_to_dynamoDb(event, context, api_call_type)
-  return{
-      "statusCode": "200",
-      "sourcePayload": message_body,
-      "sourceCodeDynamoDb": response["statusCode"],
-      "body": "create_target function to be defined",
-  }
-
-def read_target(event, context):
-  message_body = event["body-json"]
-  api_call_type = "synchronous"
-
-
-  # API logic here
-  # -----------
-
-  # -----------
-
-  # API event entry in dynamoDb
-  response = insert_event_to_dynamoDb(event, context, api_call_type)
-  return{
-      "statusCode": "200",
-      "sourcePayload": message_body,
-      "sourceCodeDynamoDb": response["statusCode"],
-      "body": "read_target function to be defined",
-  }
-
-def update_target(event, context):
-  message_body = event["body-json"]
-  api_call_type = "synchronous"
-
-
-  # API logic here
-  # -----------
-
-  # -----------
-
-  # API event entry in dynamoDb
-  response = insert_event_to_dynamoDb(event, context, api_call_type)
-  return{
-      "statusCode": "200",
-      "sourcePayload": message_body,
-      "sourceCodeDynamoDb": response["statusCode"],
-      "body": "update_target function to be defined",
-  }
-
-def delete_target(event, context):
-  message_body = event["body-json"]
-  api_call_type = "synchronous"
+def create_target_sys(db, event, context):
+    region = os.environ['region']
+    # Source Payload
+    message_body = event["body-json"]
+    api_call_type = "synchronous"
+    # generate api response
+    api_response = dict()
+    api_response['sourcePayload'] = message_body
+    api_response['body'] = dict()
+    # generate target_id
+    target_id = generate_target_sys_id(6)
+    # create an entry in the target sys table
+    target_sys_table = global_config['target_sys_table']
+    print(f"Insert source system info in {target_sys_table} table")
+    bucket_name = f"{global_config['fm_tgt_prefix']}-{target_id}-{region}"
+    try:
+        # Run the CFT to create source system bucket
+        run_cft(global_config, target_id, region)
+        # If source config is present upload the details to the target system table
+        if message_body['target_config']:
+            target_data = message_body['target_config']
+            target_data['target_id'] = target_id
+            target_data['bucket_name'] = bucket_name
+            target_data['modified_ts'] = str(datetime.utcnow())
+            create_database(target_data, global_config, region)
+            db.insert(table=target_sys_table, data=target_data)
+        # add the appropriate api response
+        api_response['body']['target_sys_created'] = True
+        api_response['body']['s3_bucket_created'] = True
+        api_response['body']['target_id'] = target_id
+        api_response['body']['target_bucket_name'] = bucket_name
+        response = insert_event_to_dynamoDb(event, context, api_call_type)
+        api_response['sourceCodeDynamoDb'] = response['statusCode']
+        api_response['statusCode'] = 200
+    except Exception as e:
+        print(e)
+        rollback_target_sys(db, global_config, target_id, region)
+        api_response['body']['target_sys_created'] = False
+        api_response['body']['s3_structure_created'] = False
+        response = insert_event_to_dynamoDb(event, context, api_call_type, status="Failed")
+        api_response['sourceCodeDynamoDb'] = response['statusCode']
+        api_response['statusCode'] = 400
+    finally:
+        return api_response
 
 
-  # API logic here
-  # -----------
+def read_target_sys(db, event, context):
+    message_body = event["body-json"]
+    api_call_type = "synchronous"
+    # API logic here
+    fetch_limit = message_body['fetch_limit']
+    target_config = message_body['target_config']
+    # if there is no fetch limit, then get the details of the
+    # target_id provided in the target_config
+    api_response = read_target_system(
+        db, fetch_limit, target_config, global_config
+    )
+    api_response['sourcePayload'] = message_body
+    # API event entry in dynamoDb
+    response = insert_event_to_dynamoDb(event, context, api_call_type)
+    api_response["sourceCodeDynamoDb"] = response["statusCode"]
+    return api_response
 
-  # -----------
 
-  # API event entry in dynamoDb
-  response = insert_event_to_dynamoDb(event, context, api_call_type)
-  return{
-      "statusCode": "200",
-      "sourcePayload": message_body,
-      "sourceCodeDynamoDb": response["statusCode"],
-      "body": "delete_target function to be defined",
-  }
+def update_target_sys(db, event, context):
+    message_body = event["body-json"]
+    api_call_type = "synchronous"
+    # parse payload
+    api_response = None
+    target_config = message_body['target_config']
+    try:
+        api_response = update_target_system(
+            db, target_config, global_config
+        )
+    except Exception as e:
+        print(e)
+    finally:
+        # API event entry in dynamoDb
+        response = insert_event_to_dynamoDb(event, context, api_call_type)
+        api_response['sourceCodeDynamoDb'] = response['statusCode']
+    return api_response
+
+
+def delete_target_sys(db, event, context):
+    """
+    incoming event
+    """
+    message_body = event["body-json"]
+    api_call_type = "synchronous"
+    region = os.environ['region']
+    target_config = message_body['target_config']
+    # API logic here
+    target_id = int(target_config['target_id'])
+    api_response = delete_target(
+        db, global_config, target_id, region,  message_body
+    )
+    # API event entry in dynamoDb
+    response = insert_event_to_dynamoDb(event, context, api_call_type)
+    api_response['sourceCodeDynamoDb'] = response["statusCode"]
+    return api_response
+
 
 def lambda_handler(event, context):
     resource = event["context"]["resource-path"][1:]
     taskType = resource.split("/")[0]
     method = resource.split("/")[1]
-    
+    db_secret = os.environ['db_secret']
+    db_region = os.environ['db_region']
+    db = Connector(db_secret, db_region, autocommit=True)
     print(event)
     print(taskType)
     print(method)
-
-    if event:
-        if method == "health":
-            return {"statusCode": "200", "body": "API Health is good"}
-            
-        elif method == "create":
-            response = create_target(event, context)
-            return response
-            
-        elif method == "read":
-            response = read_target(event, context)
-            return response
-            
-        elif method == "update":
-            response = update_target(event, context)
-            return response
-            
-        elif method == "delete":
-            response = delete_target(event, context)
-            return response
-            
-        else:
-            return {"statusCode": "404", "body": "Not found"}
+    try:
+        if event:
+            if method == "health":
+                return {"statusCode": "200", "body": "API Health is good"}
+            elif method == "create":
+                response = create_target_sys(db, event, context)
+                return response
+            elif method == "read":
+                response = read_target_sys(db, event, context)
+                return response
+            elif method == "update":
+                response = update_target_sys(db, event, context)
+                return response
+            elif method == "delete":
+                response = delete_target_sys(db, event, context)
+                return response
+            else:
+                return {"statusCode": "404", "body": "Not found"}
+    except Exception as e:
+        print(e)
+        db.rollback()
+    finally:
+        db.close()
