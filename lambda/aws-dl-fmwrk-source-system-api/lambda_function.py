@@ -1,7 +1,7 @@
-import json
+from datetime import datetime, timezone
 
-from connector import Connector
 from utils import *
+from connector import Connector
 
 config_file_path = "config/globalConfig.json"
 file = open(file=config_file_path, mode="r")
@@ -11,19 +11,15 @@ file.close()
 
 def create_source(db, event, context):
     region = os.environ["region"]
-
     # Source Payload
     message_body = event["body-json"]
     api_call_type = "synchronous"
-
     # generate api response
     api_response = dict()
     api_response["sourcePayload"] = message_body
     api_response["body"] = dict()
-
     # generate a 6 digit source system ID
     src_sys_id = generate_src_sys_id(6)
-
     # create an entry in the src sys table
     src_sys_table = global_config["src_sys_table"]
     ingestion_table = global_config["ingestion_table"]
@@ -33,20 +29,18 @@ def create_source(db, event, context):
         # create folder structure in time and event driven buckets
         time_drvn_bkt = f"{global_config['fm_prefix']}-time-drvn-inbound-{region}"
         event_drvn_bkt = f"{global_config['fm_prefix']}-evnt-drvn-inbound-{region}"
-        create_time_driven_structure(time_drvn_bkt, src_sys_id)
-        create_event_driven_structure(event_drvn_bkt, src_sys_id)
-
+        create_folder_structure(time_drvn_bkt, src_sys_id)
+        create_folder_structure(event_drvn_bkt, src_sys_id)
         # Create source system bucket
         # create_src_bucket(bucket_name, region)
         run_cft(global_config, src_sys_id, region)
-
         # If source config is present upload the details to the src system table
         if message_body["src_config"]:
             src_data = message_body["src_config"]
             src_data["src_sys_id"] = src_sys_id
             src_data["bucket_name"] = bucket_name
+            src_data["modified_ts"] = str(datetime.utcnow())
             db.insert(table=src_sys_table, data=src_data)
-
         # If ingestion config is present
         # 1. upload the details to the src sys ingestion attributes
         # 2. Upload the ingestion DB password to DB secrets
@@ -58,7 +52,6 @@ def create_source(db, event, context):
             src_sys_id, bucket_name, ingestion_data, ingestion_table, db, region
         )
         api_response["body"]["store_ingestion_attributes"] = store_status
-
         # add the appropriate api response
         api_response["body"]["result"] = "Success"
         api_response["body"]["src_sys_created"] = True
@@ -83,39 +76,12 @@ def create_source(db, event, context):
 def read_source(db, event, context):
     message_body = event["body-json"]
     api_call_type = "synchronous"
-
-    # API logic here
-    src_info = None
-    table = global_config["src_sys_table"]
     fetch_limit = message_body["fetch_limit"]
     src_config = message_body["src_config"]
     # if there is no fetch limit, then get the details of the
-    # src_sys_id provided in the src_config
-    if fetch_limit in [None, "None", "0", "NONE"] and src_config:
-        src_sys_id = int(src_config["src_sys_id"])
-        condition = ("src_sys_id=%s", [src_sys_id])
-        src_info = db.retrieve_dict(table=table, cols="all", where=condition)
-    # if a fetch limit exists then fetch all the cols of limited src_systems
-    elif isinstance(fetch_limit, int) or fetch_limit.isdigit():
-        limit = int(fetch_limit)
-        src_info = db.retrieve_dict(table=table, cols="all", limit=limit)
-    # if neither of the above case satisfies fetch all the info
-    elif fetch_limit == "all":
-        src_info = db.retrieve_dict(table=table, cols="all")
-
+    api_response = read_source_system(db, fetch_limit, src_config, global_config)
     # Generate api response
-    api_response = dict()
     api_response["sourcePayload"] = message_body
-    api_response["body"] = dict()
-    if src_info:
-        api_response["body"]["exists"] = True
-        api_response["body"]["src_info"] = src_info
-        api_response["statusCode"] = 200
-    else:
-        api_response["body"]["exists"] = False
-        api_response["body"]["src_info"] = None
-        api_response["statusCode"] = 404
-
     # API event entry in dynamoDb
     response = insert_event_to_dynamoDb(event, context, api_call_type)
     api_response["sourceCodeDynamoDb"] = response["statusCode"]
@@ -128,24 +94,13 @@ def update_source(db, event, context):
     # parse payload
     src_config = message_body["src_config"]
     ingestion_config = message_body["ingestion_config"]
-    api_response = dict()
+    api_response = update_source_system(
+        db, src_config, global_config, ingestion_config
+    )
     api_response["sourcePayload"] = src_config
-    api_response["body"] = dict()
-    try:
-        src_exists, src_msg = update_source_system(db, src_config, global_config)
-        ing_exists, ing_msg = update_ingestion_attributes(
-            db, ingestion_config, global_config
-        )
-        api_response["body"]["src_sys_exists"] = src_exists
-        api_response["body"]["src_update_msg"] = src_msg
-        api_response["body"]["ingestion_sys_exists"] = ing_exists
-        api_response["body"]["ingestion_update_msg"] = ing_msg
-    except Exception as e:
-        print(e)
-    finally:
-        # API event entry in dynamoDb
-        response = insert_event_to_dynamoDb(event, context, api_call_type)
-        api_response["sourceCodeDynamoDb"] = response["statusCode"]
+    # API event entry in dynamoDb
+    response = insert_event_to_dynamoDb(event, context, api_call_type)
+    api_response["sourceCodeDynamoDb"] = response["statusCode"]
     return api_response
 
 
@@ -158,29 +113,10 @@ def delete_source(db, event, context):
     region = os.environ["region"]
     src_config = message_body["src_config"]
     # API logic here
-    api_response = dict()
-    api_response["body"] = dict()
+    api_response = delete_source_system(
+        db, global_config, src_config, region
+    )
     api_response["sourcePayload"] = message_body
-    src_sys_id = int(src_config["src_sys_id"])
-    if src_sys_present(db, global_config, src_sys_id):
-        api_response["body"]["src_sys_present"] = True
-        associated = is_associated_with_asset(db, src_sys_id)
-        api_response["body"]["asset_association"] = associated
-        # If it is not associated,source system stack will be deleted
-        if not associated:
-            try:
-                delete_rds_entry(db, global_config, src_sys_id)
-                api_response["body"]["src_sys_deleted"] = True
-            except Exception as e:
-                print(e)
-            # delete the stack
-            delete_src_sys_stack(global_config, src_sys_id, region)
-        else:
-            api_response["body"]["src_sys_deleted"] = False
-    else:
-        api_response["body"]["src_sys_present"] = False
-        api_response["body"]["src_sys_deleted"] = False
-
     # API event entry in dynamoDb
     response = insert_event_to_dynamoDb(event, context, api_call_type)
     api_response["sourceCodeDynamoDb"] = response["statusCode"]

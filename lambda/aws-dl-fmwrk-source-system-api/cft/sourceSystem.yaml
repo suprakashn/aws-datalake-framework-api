@@ -49,22 +49,3 @@ Resources:
       Principal: sns.amazonaws.com
       SourceArn:  !Ref SourceSystemSNS
       FunctionName: !Join ["", ["arn:aws:lambda:", !Ref CurrentRegion, ":", !Ref AwsAccount, ":function:", !Ref DlFmwrkSrcInfoLambdaName]]
-
-
-  #SourceSystemIamUser:
-  #  Type: AWS::IAM::User
-  #  Properties:
-  #    Path: !Join ["", ["/", !Ref DlFmwrkPrefix, "-src-sys-users/"]]
-  #    UserName: !Ref srcSysId
-  #    Policies:
-  #    - PolicyName: !Join ["", [!Ref DlFmwrkPrefix, "-src-sys-", !Ref srcSysId, "-policy"]]
-  #      PolicyDocument:
-  #        Statement:
-  #        - Effect: Allow
-  #          Action: s3:PutObject
-  #          Resource: !Join ["", [!Ref DlFmwrkPrefix, "-", !Ref srcSysId, "-", "*/*/init/*/"]]
-
-  #SourceSystemIamUserKey:
-  #  Type: AWS::IAM::AccessKey
-  #  Properties:
-  #    UserName: !Ref SourceSystemIamUser
