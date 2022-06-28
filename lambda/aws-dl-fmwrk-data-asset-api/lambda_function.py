@@ -8,24 +8,26 @@ def create_asset(event, context, config, database):
 
     # API logic here
     # -----------
-    asset_id = str(generate_asset_id(10))
-    trigger_mechanism = message_body["ingestion_attributes"]["trigger_mechanism"]
-    freq = message_body["ingestion_attributes"]["frequency"] if "frequency" in message_body["ingestion_attributes"].keys(
-    ) else "None"
-    asset_nm = message_body["asset_info"]["asset_nm"]
 
     # getting asset data
+    asset_id = str(generate_asset_id(10))
     data_asset = message_body["asset_info"]
     target_id = data_asset["target_id"]
     src_sys_id = data_asset["src_sys_id"]
     data_asset["asset_id"] = asset_id
     data_asset["modified_ts"] = "now()"
+    asset_nm = message_body["asset_info"]["asset_nm"]
+    rs_load_ind = message_body["asset_info"]["rs_load_ind"]
 
     # getting ingestion data
+    trigger_mechanism = message_body["ingestion_attributes"]["trigger_mechanism"]
+    freq = message_body["ingestion_attributes"]["frequency"] if "frequency" in message_body["ingestion_attributes"].keys(
+    ) else "None"
     ingestion_attributes = message_body["ingestion_attributes"]
     ingestion_attributes["asset_id"] = asset_id
     ingestion_attributes["src_sys_id"] = src_sys_id
     ingestion_attributes["modified_ts"] = "now()"
+
     # Getting required data from source_system_ingstn_atrbts table
     ingestion_pattern = database.retrieve_dict(
         table="source_system_ingstn_atrbts",
@@ -65,6 +67,8 @@ def create_asset(event, context, config, database):
     data_asset["athena_table_name"] = athena_table_name
     data_asset["target_path"] = target_path
     data_asset["source_path"] = source_path
+    if rs_load_ind == True:
+        data_asset["rs_stg_table_nm"] = f"{asset_nm}_stg"
 
     # getting attributes data
     data_asset_attributes = message_body["asset_attributes"]
@@ -89,6 +93,7 @@ def create_asset(event, context, config, database):
             table="data_asset_ingstn_atrbts",
             data=ingestion_attributes
         )
+        database.close()
         status = "200"
         body = {
             "assetId_inserted": asset_id
@@ -98,6 +103,7 @@ def create_asset(event, context, config, database):
         print(e)
         status = "404"
         database.rollback()
+        database.close()
         body = {
             "error": f"{e}"
         }
@@ -162,7 +168,9 @@ def read_asset(event, context, database):
         "file_encryption_ind",
         "athena_table_name",
         "asset_owner",
-        "support_cntct"
+        "support_cntct",
+        "rs_load_ind",
+        "rs_stg_table_nm"
     ]
     attributes_columns = [
         "col_id",
@@ -214,7 +222,7 @@ def read_asset(event, context, database):
                     [asset_id, src_sys_id]
                 )
             )[0]
-
+        database.close()
         status = "200"
         body = {
             "asset_info": dict_asset,
@@ -223,6 +231,7 @@ def read_asset(event, context, database):
         }
 
     except Exception as e:
+        database.close()
         print(e)
         status = "404"
         body = {
@@ -248,9 +257,16 @@ def update_asset(event, context, database):
 
     asset_id = message_body["asset_id"]
     src_sys_id = message_body["src_sys_id"]
+    message_keys = message_body.keys()
+
     try:
-        message_keys = message_body.keys()
         if "asset_info" in message_keys:
+            asset_nm = message_body["asset_info"]["asset_nm"]
+            rs_load_ind = message_body["asset_info"]["rs_load_ind"]
+            if rs_load_ind == True:
+                message_body["asset_info"]["rs_stg_table_nm"] = f"{asset_nm}_stg"
+            else:
+                message_body["asset_info"]["rs_stg_table_nm"] = None
             data_dataAsset = message_body["asset_info"]
             data_dataAsset["modified_ts"] = "now()"
             dataAsset_where = ("asset_id=%s", [asset_id])
@@ -292,6 +308,7 @@ def update_asset(event, context, database):
                 asset_id=asset_id,
                 schedule=freq
             )
+        database.close()
         status = "200"
         body = {
             "assetId_updated": asset_id
@@ -300,6 +317,7 @@ def update_asset(event, context, database):
     except Exception as e:
         print(e)
         database.rollback()
+        database.close()
         status = "404"
         body = {
             "error": f"{e}"
@@ -350,6 +368,7 @@ def delete_asset(event, context, database):
             table="data_asset",
             where=where_clause
         )
+        database.close()
         status = "200"
         body = {
             "assetId_deleted": asset_id
@@ -371,6 +390,7 @@ def delete_asset(event, context, database):
             "error": f"{e}"
         }
         database.rollback()
+        database.close()
 
     # -----------
 
@@ -387,7 +407,6 @@ def lambda_handler(event, context):
     resource = event["context"]["resource-path"][1:]
     taskType = resource.split("/")[0]
     method = resource.split("/")[1]
-    db = get_database()
 
     print(event)
     print(taskType)
@@ -398,25 +417,25 @@ def lambda_handler(event, context):
             return {"statusCode": "200", "body": "API Health is good"}
 
         elif method == "create":
+            db = get_database()
             global_config = getGlobalParams()
             response = create_asset(
                 event, context, config=global_config, database=db)
-            db.close()
             return response
 
         elif method == "read":
+            db = get_database()
             response = read_asset(event, context, database=db)
-            db.close()
             return response
 
         elif method == "update":
+            db = get_database()
             response = update_asset(event, context, database=db)
-            db.close()
             return response
 
         elif method == "delete":
+            db = get_database()
             response = delete_asset(event, context, database=db)
-            db.close()
             return response
 
         else:
