@@ -18,6 +18,7 @@ def create_asset(event, context, config, database):
     data_asset["modified_ts"] = "now()"
     asset_nm = message_body["asset_info"]["asset_nm"]
     rs_load_ind = message_body["asset_info"]["rs_load_ind"]
+    support_email = message_body["asset_info"]["support_cntct"]
 
     # getting ingestion data
     trigger_mechanism = message_body["ingestion_attributes"]["trigger_mechanism"]
@@ -80,6 +81,10 @@ def create_asset(event, context, config, database):
         i["tgt_data_type"] = i["data_type"] if str(
             i["tgt_data_type"]).lower() == "none" else i["tgt_data_type"]
 
+    # get adv_dq_rules
+    adv_dq_rules = parse_adv_dq(
+        message_body, asset_id, src_sys_id
+    )
     try:
         database.insert(
             table="data_asset",
@@ -93,6 +98,11 @@ def create_asset(event, context, config, database):
             table="data_asset_ingstn_atrbts",
             data=ingestion_attributes
         )
+        if adv_dq_rules:
+            database.insert_many(
+                table='adv_dq_rules',
+                data=adv_dq_rules
+            )
         database.close()
         status = "200"
         body = {
@@ -127,7 +137,8 @@ def create_asset(event, context, config, database):
                 response = glue_airflow_trigger(
                     asset_id=asset_id,
                     source_id=src_sys_id,
-                    schedule=freq
+                    schedule=freq,
+                    email=support_email
                 )
             except Exception as e:
                 status = "airflow_error"
@@ -195,6 +206,11 @@ def read_asset(event, context, database):
         "trigger_mechanism",
         "frequency"
     ]
+    dq_columns = [
+        'dq_rule_id',
+        'asset_id',
+        'dq_rule'
+    ]
     # Getting the asset id and source system id
     asset_id = message_body["asset_id"]
     src_sys_id = message_body["src_sys_id"]
@@ -222,12 +238,18 @@ def read_asset(event, context, database):
                     [asset_id, src_sys_id]
                 )
             )[0]
+            dict_dq = database.retrieve_dict(
+                table="adv_dq_rules",
+                cols=dq_columns,
+                where=("asset_id=%s", [asset_id])
+            )
         database.close()
         status = "200"
         body = {
             "asset_info": dict_asset,
             "asset_attributes": dict_attributes,
-            "ingestion_attributes": dict_ingestion
+            "ingestion_attributes": dict_ingestion,
+            "adv_dq_rules": dict_dq
         }
 
     except Exception as e:
@@ -296,10 +318,14 @@ def update_asset(event, context, database):
                 data=data_ingestion,
                 where=ingestion_where
             )
+        if "adv_dq_rules" in message_keys:
+            update_adv_dq(
+                database, message_body, src_sys_id, asset_id
+            )
             # Deleting previous dag
             client = boto3.client("s3")
             airflow_bucket = 'dl-fmwrk-mwaa-us-east-2'
-            file_name = f"dags/{src_sys_id}_{asset_id}_worflow.py"
+            file_name = f"dags/{src_sys_id}_{asset_id}_workflow.py"
             client.delete_object(Bucket=airflow_bucket, Key=file_name)
             # Creating new dag
             freq = message_body["ingestion_attributes"]["frequency"]
@@ -352,6 +378,10 @@ def delete_asset(event, context, database):
                 "asset_id=%s and src_sys_id=%s",
                 [asset_id, src_sys_id]
             )
+        )
+        database.delete(
+            table="adv_dq_rules",
+            where=where_clause
         )
         database.delete(
             table="data_asset_attributes",

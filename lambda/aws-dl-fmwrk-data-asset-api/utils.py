@@ -7,7 +7,7 @@ import json
 
 
 def getGlobalParams():
-    with open('globalConfig.json', "r") as json_file:
+    with open('config/globalConfig.json', "r") as json_file:
         json_config = json.load(json_file)
         return json_config
 
@@ -72,7 +72,7 @@ def create_src_s3_dir_str(asset_id, message_body, config, mechanism):
     )
 
 
-def glue_airflow_trigger(source_id, asset_id, schedule):
+def glue_airflow_trigger(source_id, asset_id, schedule, email):
     s3_client = boto3.client("s3")
     template_bucket = 'dl-fmwrk-code-us-east-2'
     airflow_bucket = 'dl-fmwrk-mwaa-us-east-2'
@@ -88,6 +88,7 @@ def glue_airflow_trigger(source_id, asset_id, schedule):
     file_content = file_content.replace("src_sys_id_placeholder", source_id)
     file_content = file_content.replace("ast_id_placeholder", asset_id)
     file_content = file_content.replace("dag_id_placeholder", dag_id)
+    file_content = file_content.replace("email_placeholder", email)
     if schedule == "None":
         file_content = file_content.replace('"schedule_placeholder"', "None")
     else:
@@ -152,3 +153,38 @@ def insert_event_to_dynamoDb(event, context, api_call_type, status="success", op
         "statusCode": response["ResponseMetadata"]["HTTPStatusCode"],
         "body": body,
     }
+
+
+def parse_adv_dq(body, asset_id, src_id):
+    if 'adv_dq_rules' in body.keys():
+        if body['adv_dq_rules']:
+            input_rules = body['adv_dq_rules']
+            dq_list = list()
+            for idx, rule in enumerate(input_rules):
+                elem_dict = {
+                    'dq_rule_id': f"{src_id}-{asset_id}-{idx}",
+                    'asset_id': asset_id,
+                    'dq_rule': rule,
+                    'created_ts': datetime.utcnow()
+                }
+                dq_list.append(elem_dict)
+            return dq_list
+    return None
+
+
+def delete_adv_dq(db, asset_id):
+    where_clause = ("asset_id=%s", [asset_id])
+    db.delete(
+        table="adv_dq_rules",
+        where=where_clause
+    )
+    db.commit()
+
+
+def update_adv_dq(db, body, src_id, asset_id):
+    delete_adv_dq(db, asset_id)
+    dq_rules = parse_adv_dq(body, asset_id, src_id)
+    db.update(
+        table='adv_dq_rules',
+        data=dq_rules
+    )
