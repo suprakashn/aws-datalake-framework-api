@@ -5,12 +5,6 @@ from random import randrange
 
 import boto3
 
-from connector import Connector, RedshiftConnector
-from create import create_target_system
-from read import read_target_system
-from update import update_target_system
-from delete import delete_target_system
-
 
 def generate_target_sys_id(n):
     """
@@ -38,7 +32,7 @@ def insert_event_to_dynamoDb(
     log_group_name = context.log_group_name
     log_stream_name = context.log_stream_name
     function_name = context.function_name
-    method_name = event["context"]["method-path"]
+    method_name = event["context"]["resource-path"]
     query_string = event["params"]["querystring"]
     payload = event["body-json"]
 

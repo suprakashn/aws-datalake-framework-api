@@ -171,6 +171,8 @@ def delete_target_system(
     """
     status = False
     target_info = target_present(metadata_conn, global_config, target_id)
+    rs_db = target_info['rs_db_nm']
+    redshift_conn.switch_database(rs_db)
     if target_info:
         associated = is_associated_with_asset(metadata_conn, target_id)
         if not associated:
@@ -180,23 +182,23 @@ def delete_target_system(
                 delete_rds_entry(metadata_conn, global_config, target_id)
                 delete_target_sys_stack(global_config, target_id, region)
                 delete_redshift(redshift_conn, schema)
-                resp = Response(
+                resp_ob = Response(
                     method, status, body=None, payload=source_payload
                 )
-                return resp
+                return resp_ob.get_response()
             except Exception as e:
                 status = False
-                resp = Response(
+                resp_ob = Response(
                     method, status, body=None,
-                    payload=source_payload, message=e
+                    payload=source_payload, message=str(e)
                 )
-                return resp
+                return resp_ob.get_response()
         else:
             message = "Asset(s) are associated with the target system"
     else:
         message = "Target system is not present"
-    resp = Response(
+    resp_ob = Response(
         method, status, body=None,
         payload=source_payload, message=message
     )
-    return resp
+    return resp_ob.get_response()

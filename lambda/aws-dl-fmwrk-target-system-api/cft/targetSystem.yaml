@@ -8,10 +8,7 @@ Parameters:
     Default: dl-fmwrk
   AwsAccount:
     Type: String
-    Default: "076931226898"
-  DlFmwrkSrcInfoLambdaName:
-    Type: String
-    Default: dlFmwrkSrcDataInfo
+    Default: "99999999"
   tgtSysId:
     Type: Number
     Default: 99999999

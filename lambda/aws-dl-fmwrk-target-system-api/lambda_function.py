@@ -1,4 +1,9 @@
 from utils import *
+from connector import Connector, RedshiftConnector
+from create import create_target_system
+from read import read_target_system
+from update import update_target_system
+from delete import delete_target_system
 
 
 config_file_path = "config/globalConfig.json"
@@ -93,16 +98,15 @@ def delete_target_sys(method, metadata_db, redshift_db, event, context):
 
 
 def lambda_handler(event, context):
-    resource = event["context"]["method-path"][1:]
+    resource = event["context"]["resource-path"][1:]
     taskType = resource.split("/")[0]
     method = resource.split("/")[1]
     db_secret = os.environ['db_secret']
-    db_region = os.environ['db_region']
     rs_secret = os.environ['rs_secret']
-    rs_region = os.environ['rs_region']
-    metadata_conn = Connector(db_secret, db_region, autocommit=True)
+    region = os.environ['region']
+    metadata_conn = Connector(db_secret, region, autocommit=True)
     redshift_conn = RedshiftConnector(
-        'dev', secret=rs_secret, region=rs_region,
+        'dev', secret=rs_secret, region=region,
         autocommit=True, create_db=True
     )
     print(event)

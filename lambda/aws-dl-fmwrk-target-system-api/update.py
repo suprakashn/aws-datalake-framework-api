@@ -1,5 +1,6 @@
 from datetime import datetime
 from api_response import Response
+from api_exceptions import NonEditableParams
 
 
 def update_target_system(method, db, target_config: dict, global_config: dict):
@@ -27,25 +28,32 @@ def update_target_system(method, db, target_config: dict, global_config: dict):
                     db.update(target_table, data_to_update, condition)
                     status = True
                     message = 'updated'
-                    resp = Response(
+                    resp_ob = Response(
                         method, status, body=data_to_update,
                         payload=target_config, message=message
                     )
-                    return resp
                 except Exception as e:
-                    resp = Response(
+                    resp_ob = Response(
                         method, False, body=data_to_update,
-                        payload=target_config, message=e
+                        payload=target_config, message=str(e)
                     )
-                    return resp
             else:
                 message = "Trying to update a non editable parameter: target_id / bucket name"
+                resp_ob = Response(
+                    method, status, body=None,
+                    payload=target_config, message=message
+                )
         else:
             message = "Target system DNE"
+            resp_ob = Response(
+                method, status, body=None,
+                payload=target_config, message=message
+            )
     else:
         message = 'No update config provided'
-    resp = Response(
-        method, status, body=None,
-        payload=target_config, message=message
-    )
-    return resp
+        resp_ob = Response(
+            method, status, body=None,
+            payload=target_config, message=message
+        )
+    response = resp_ob.get_response()
+    return response

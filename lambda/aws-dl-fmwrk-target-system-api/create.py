@@ -3,7 +3,7 @@ from datetime import datetime
 
 import boto3
 
-from utils import rollback_target_sys
+from utils import rollback_target_sys, insert_event_to_dynamoDb
 from api_response import Response
 
 
@@ -118,78 +118,6 @@ def run_cft(global_config, target_id, region):
     )
 
 
-def insert_event_to_dynamoDb(
-        event, context, api_call_type,
-        status="success", op_type="insert"
-):
-    """
-
-    :param event:
-    :param context:
-    :param api_call_type:
-    :param status:
-    :param op_type:
-    :return:
-    """
-    cur_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    aws_request_id = context.aws_request_id
-    log_group_name = context.log_group_name
-    log_stream_name = context.log_stream_name
-    function_name = context.function_name
-    method_name = event["context"]["method-path"]
-    query_string = event["params"]["querystring"]
-    payload = event["body-json"]
-
-    client = boto3.resource("dynamodb")
-    table = client.Table("aws-dl-fmwrk-api-events")
-
-    if op_type == "insert":
-        response = table.put_item(
-            Item={
-                "aws_request_id": aws_request_id,
-                "method_name": method_name,
-                "log_group_name": log_group_name,
-                "log_stream_name": log_stream_name,
-                "function_name": function_name,
-                "query_string": query_string,
-                "payload": payload,
-                "api_call_type": api_call_type,
-                "modified ts": cur_time,
-                "response_status": status,
-            }
-        )
-    else:
-        response = table.update_item(
-            Key={
-                "aws_request_id": aws_request_id,
-                "method_name": method_name,
-            },
-            ConditionExpression="attribute_exists(aws_request_id)",
-            UpdateExpression="SET response_status = :val1",
-            ExpressionAttributeValues={
-                ":val1": status,
-            },
-        )
-
-    if response["ResponseMetadata"]["HTTPStatusCode"] == 200:
-        body = (
-                "Insert/Update of the event with aws_request_id="
-                + aws_request_id
-                + " completed successfully"
-        )
-    else:
-        body = (
-                "Insert/Update of the event with aws_request_id="
-                + aws_request_id
-                + " failed"
-        )
-
-    return {
-        "statusCode": response["ResponseMetadata"]["HTTPStatusCode"],
-        "body": body,
-    }
-
-
 def redshift_db_exists(rs_conn, db_name):
     """
 
@@ -228,7 +156,7 @@ def create_redshift_db(target_data, rs_conn):
     if redshift_db_exists(rs_conn, db_name):
         print(f"DB {db_name} exists")
     else:
-        rs_conn.create_athena_db(db_name)
+        rs_conn.create_database(db_name)
     rs_conn.switch_database(db_name)
     return rs_conn
 
@@ -293,10 +221,11 @@ def create_target_system(
         insert_metadata(metadata_conn, target_sys_table, target_data)
         status = True
     except Exception as e:
-        message = e
+        message = str(e)
         rollback_target_sys(metadata_conn, global_config, target_id, region)
-    resp = Response(
+    resp_ob = Response(
         method, status, body=target_data,
         payload=source_payload, message=message
     )
-    return resp
+    response = resp_ob.get_response()
+    return response

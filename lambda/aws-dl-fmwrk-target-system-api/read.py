@@ -1,4 +1,5 @@
 from api_response import Response
+from api_exceptions import EntryDoesntExist
 
 
 def read_target_system(
@@ -15,8 +16,11 @@ def read_target_system(
     :return:
     """
     target_info = None
-    cols = ['target_id', 'domain', 'subdomain',
-            'bucket_name', 'data_owner', 'support_cntct']
+    cols = [
+        'target_id', 'domain', 'subdomain',
+        'bucket_name', 'data_owner', 'support_cntct',
+        'rs_load_ind', 'rs_db_nm', 'rs_schema_nm'
+        ]
     table = global_config['target_sys_table']
     if fetch_limit in [None, 'None', '0', 'NONE'] and source_payload:
         target_id = int(source_payload['target_id'])
@@ -31,7 +35,7 @@ def read_target_system(
         target_info = metadata_db.retrieve_dict(table=table, cols=cols)
     if target_info:
         status = True
-        resp = Response(
+        resp_ob = Response(
             method,
             status,
             target_info,
@@ -39,12 +43,13 @@ def read_target_system(
         )
     else:
         status = False
-        resp = Response(
+        resp_ob = Response(
             method,
             status,
             target_info,
             source_payload,
             message='The information about the resource DNE'
         )
-    return resp
+    response = resp_ob.get_response()
+    return response
 
