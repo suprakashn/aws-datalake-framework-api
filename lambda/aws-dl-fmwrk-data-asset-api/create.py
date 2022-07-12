@@ -1,16 +1,9 @@
 from utils import *
 
 
-def create_asset(event, context, config, database):
-    message_body = event["body-json"]
-    api_call_type = "synchronous"
-    payload = event["body-json"]
-
-    # API logic here
-    # -----------
-
+def parse_data(message_body, database):
     # getting asset data
-    asset_id = str(generate_asset_id(10))
+    asset_id = generate_asset_id(10)
     data_asset = message_body["asset_info"]
     target_id = data_asset["target_id"]
     src_sys_id = data_asset["src_sys_id"]
@@ -85,6 +78,20 @@ def create_asset(event, context, config, database):
     adv_dq_rules = parse_adv_dq(
         message_body, asset_id, src_sys_id
     )
+    return asset_id, src_sys_id, trigger_mechanism, data_asset, data_asset_attributes,\
+        ingestion_attributes, adv_dq_rules, support_email, freq
+
+
+def create_asset(event, context, config, database):
+    payload = event["body-json"]
+    api_call_type = "synchronous"
+
+    # API logic here
+    # -----------
+
+    asset_id, src_sys_id, trigger_mechanism, data_asset, data_asset_attributes, ingestion_attributes, adv_dq_rules, \
+        support_email, freq = parse_data(payload, database)
+
     try:
         database.insert(
             table="data_asset",
@@ -106,32 +113,38 @@ def create_asset(event, context, config, database):
         database.close()
         status_code = 200
         status = True
+        body = {
+            "data_asset": data_asset,
+            "data_asset_attributes": data_asset_attributes,
+            "data_asset_ingstn_atrbts": ingestion_attributes,
+            "adv_dq_rules": adv_dq_rules
+        }
 
     except Exception as e:
         print(e)
         status_code = 401
         status = False
+        body = str(e)
         database.rollback()
         database.close()
-        payload = event["body-json"]
-        message_body = {}
 
     finally:
         if status_code == 200:
             try:
                 create_src_s3_dir_str(
                     asset_id=asset_id,
-                    message_body=message_body,
+                    message_body=payload,
                     config=config,
                     mechanism=trigger_mechanism
                 )
             except Exception as e:
                 status_code = 401
                 status = False
+                body = {"s3_dir_error": str(e)}
         if status_code == 200:
             try:
                 response = glue_airflow_trigger(
-                    asset_id=asset_id,
+                    asset_id=str(asset_id),
                     source_id=src_sys_id,
                     schedule=freq,
                     email=support_email
@@ -139,6 +152,7 @@ def create_asset(event, context, config, database):
             except Exception as e:
                 status_code = 401
                 status = False
+                body = {"airflow_error": str(e)}
 
     # -----------
 
@@ -148,6 +162,8 @@ def create_asset(event, context, config, database):
         "statusCode": status_code,
         "status": status,
         "sourceCodeDynamoDb": response["statusCode"],
-        "body": message_body,
+        "body": json.loads(
+            json.dumps(body, indent=4, sort_keys=True, default=str)
+        ),
         "payload": payload
     }
