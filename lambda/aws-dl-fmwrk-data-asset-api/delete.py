@@ -5,14 +5,12 @@ from utils import *
 def delete_asset(event, context, database):
     message_body = event["body-json"]
     api_call_type = "synchronous"
-    payload = message_body.copy()
 
     # API logic here
     # -----------
 
     asset_id = message_body["asset_id"]
     src_sys_id = message_body["src_sys_id"]
-    where_clause = ("asset_id=%s", [asset_id])
 
     try:
         database.delete(
@@ -24,11 +22,11 @@ def delete_asset(event, context, database):
         )
         database.delete(
             table="adv_dq_rules",
-            where=where_clause
+            where=("asset_id=%s", [asset_id])
         )
         database.delete(
             table="data_asset_attributes",
-            where=where_clause
+            where=("asset_id=%s", [asset_id])
         )
         database.delete(
             table="data_asset_ingstn_atrbts",
@@ -39,7 +37,7 @@ def delete_asset(event, context, database):
         )
         database.delete(
             table="data_asset",
-            where=where_clause
+            where=("asset_id=%s", [asset_id])
         )
         database.close()
         status = True
@@ -53,11 +51,13 @@ def delete_asset(event, context, database):
                 Bucket=bucket_name,
                 Key=file_name
             )
+        body = f"deleted_asset : {asset_id}"
 
     except Exception as e:
         print(e)
         status = False
         status_code = 404
+        body = str(e)
         database.rollback()
         database.close()
 
@@ -69,6 +69,6 @@ def delete_asset(event, context, database):
         "statusCode": status_code,
         "status": status,
         "sourceCodeDynamoDb": response["statusCode"],
-        "body": message_body,
-        "payload": payload
+        "body": body,
+        "payload": message_body
     }
