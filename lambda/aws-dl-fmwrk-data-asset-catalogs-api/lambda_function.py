@@ -1,5 +1,7 @@
 from utils import *
 
+from api_response import Response
+
 
 def read_asset(event, context, database):
     message_body = event["body-json"]
@@ -12,10 +14,10 @@ def read_asset(event, context, database):
         "src_sys_id",
         "asset_id",
         "dq_validation",
-        "data_standardization",
+        "data_publish",
         "data_masking",
         "dq_validation_exec_id",
-        "data_standardization_exec_id",
+        "data_publish_exec_id",
         "data_masking_exec_id",
         "src_file_path",
         "s3_log_path",
@@ -26,28 +28,29 @@ def read_asset(event, context, database):
     src_sys_id = message_body["src_sys_id"]
     # Where clause
     where_clause = ("asset_id=%s and src_sys_id=%s", [asset_id, src_sys_id])
-    try:
-        dict_catalog = database.retrieve_dict(
-            table="data_asset_catalogs",
-            cols=catalog_columns,
-            where=where_clause
-        )
-        status = "200"
+    dict_catalog = database.retrieve_dict(
+        table="data_asset_catalogs",
+        cols=catalog_columns,
+        where=where_clause
+    )
+    database.close()
+    if dict_catalog:
+        status = True
+        status_code = 202
         body = dict_catalog
-
-    except Exception as e:
-        print(e)
-        status = "404"
-        body = {
-            "error": f"{e}"
-        }
+    else:
+        status = False
+        status_code = 402
+        body = {}
     # -----------
     # API event entry in dynamoDb
     response = insert_event_to_dynamoDb(event, context, api_call_type)
     return{
-        "statusCode": status,
+        "statusCode": status_code,
+        "status": status,
         "sourceCodeDynamoDb": response["statusCode"],
-        "body": body
+        "body": body,
+        "payload": message_body
     }
 
 
@@ -62,9 +65,19 @@ def lambda_handler(event, context):
     print(method)
 
     if event:
-        if method == "read":
-            response = read_asset(event, context, database=db)
-            db.close()
-            return response
+        if method == "health":
+            response = Response(method, True, "body", None)
+            return response.get_response()
+
+        elif method == "read":
+            db = get_database()
+            generated_response = read_asset(event, context, database=db)
+            response = Response(
+                method=method,
+                status=generated_response["status"],
+                body=generated_response["body"],
+                payload=generated_response["payload"]
+            )
+            return response.get_response()
         else:
             return {"statusCode": "404", "body": "Not found"}

@@ -156,6 +156,7 @@ def insert_event_to_dynamoDb(event, context, api_call_type, status="success", op
 
 
 def parse_adv_dq(body, asset_id, src_id):
+    print(body)
     if 'adv_dq_rules' in body.keys():
         if body['adv_dq_rules']:
             input_rules = body['adv_dq_rules']
@@ -184,7 +185,8 @@ def delete_adv_dq(db, asset_id):
 def update_adv_dq(db, body, src_id, asset_id):
     delete_adv_dq(db, asset_id)
     dq_rules = parse_adv_dq(body, asset_id, src_id)
-    db.update(
+    print(dq_rules)
+    db.insert_many(
         table='adv_dq_rules',
         data=dq_rules
     )

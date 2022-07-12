@@ -6,7 +6,7 @@ import json
 
 
 def getGlobalParams():
-    with open('globalConfig.json', "r") as json_file:
+    with open('config/globalConfig.json', "r") as json_file:
         json_config = json.load(json_file)
         return json_config
 

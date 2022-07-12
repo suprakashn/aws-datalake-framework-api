@@ -1,5 +1,7 @@
 from utils import *
 
+from api_response import Response
+
 
 def read_asset(event, context, database):
     message_body = event["body-json"]
@@ -31,31 +33,30 @@ def read_asset(event, context, database):
     # Getting the asset id and source system id
     src_sys_id = message_body["src_sys_id"]
     where_clause = ("src_sys_id=%s", [src_sys_id])
-    try:
-        list_asset = database.retrieve_dict(
-            table="data_asset",
-            cols=asset_columns,
-            where=where_clause
-        )
-        database.close()
-        status = "200"
+    list_asset = database.retrieve_dict(
+        table="data_asset",
+        cols=asset_columns,
+        where=where_clause
+    )
+    database.close()
+    if list_asset:
+        status = True
+        status_code = 202
         body = list_asset
-
-    except Exception as e:
-        database.close()
-        print(e)
-        status = "404"
-        body = {
-            "error": f"{e}"
-        }
+    else:
+        status = False
+        status_code = 402
+        body = {}
 
     # -----------
     # API event entry in dynamoDb
     response = insert_event_to_dynamoDb(event, context, api_call_type)
     return{
-        "statusCode": status,
+        "statusCode": status_code,
+        "status": status,
         "sourceCodeDynamoDb": response["statusCode"],
-        "body": body
+        "body": body,
+        "payload": message_body
     }
 
 
@@ -70,12 +71,19 @@ def lambda_handler(event, context):
 
     if event:
         if method == "health":
-            return {"statusCode": "200", "body": "API Health is good"}
+            response = Response(method, True, "body", None)
+            return response.get_response()
 
         elif method == "read":
             db = get_database()
-            response = read_asset(event, context, database=db)
-            return response
+            generated_response = read_asset(event, context, database=db)
+            response = Response(
+                method=method,
+                status=generated_response["status"],
+                body=generated_response["body"],
+                payload=generated_response["payload"]
+            )
+            return response.get_response()
 
         else:
             return {"statusCode": "404", "body": "Not found"}
