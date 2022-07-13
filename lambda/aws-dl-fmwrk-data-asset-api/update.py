@@ -1,10 +1,11 @@
 import boto3
 from utils import *
 
+from api_response import Response
 
-def update_asset(event, context, database):
+
+def update_asset(event, method, database):
     message_body = event["body-json"]
-    api_call_type = "synchronous"
     payload = message_body.copy()
 
     # API logic here
@@ -16,7 +17,7 @@ def update_asset(event, context, database):
 
     try:
         if "asset_info" in message_keys:
-            asset_nm = message_body["asset_info"]["asset_nm"]
+            # asset_nm = message_body["asset_info"]["asset_nm"]
             # if "rs_load_ind" in message_body["asset_info"].keys():
             #    rs_load_ind = message_body["asset_info"]["rs_load_ind"]
             #    if rs_load_ind == True:
@@ -84,12 +85,10 @@ def update_asset(event, context, database):
 
     # -----------
 
-    # API event entry in dynamoDb
-    response = insert_event_to_dynamoDb(event, context, api_call_type)
-    return{
-        "statusCode": status_code,
-        "status": status,
-        "sourceCodeDynamoDb": response["statusCode"],
-        "body": message_body,
-        "payload": payload
-    }
+    response = Response(
+        method=method,
+        status=status,
+        body=message_body,
+        payload=payload
+    )
+    return response.get_response()

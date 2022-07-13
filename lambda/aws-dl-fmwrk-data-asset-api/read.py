@@ -1,9 +1,10 @@
 from utils import *
 
+from api_response import Response
 
-def read_asset(event, context, database):
+
+def read_asset(event, method, database):
     message_body = event["body-json"]
-    api_call_type = "synchronous"
 
     # API logic here
     # -----------
@@ -109,12 +110,10 @@ def read_asset(event, context, database):
         message_body = event["body-json"]
 
     # -----------
-    # API event entry in dynamoDb
-    response = insert_event_to_dynamoDb(event, context, api_call_type)
-    return{
-        "statusCode": status_code,
-        "status": status,
-        "sourceCodeDynamoDb": response["statusCode"],
-        "body": body,
-        "payload": message_body
-    }
+    response = Response(
+        method=method,
+        status=status,
+        body=body,
+        payload=message_body
+    )
+    return response.get_response()

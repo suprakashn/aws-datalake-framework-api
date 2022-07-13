@@ -1,5 +1,7 @@
 from utils import *
 
+from api_response import Response
+
 
 def parse_data(message_body, database):
     # getting asset data
@@ -82,15 +84,14 @@ def parse_data(message_body, database):
         ingestion_attributes, adv_dq_rules, support_email, freq
 
 
-def create_asset(event, context, config, database):
+def create_asset(event, method, config, database):
     payload = event["body-json"]
-    api_call_type = "synchronous"
 
     # API logic here
     # -----------
 
     asset_id, src_sys_id, trigger_mechanism, data_asset, data_asset_attributes, ingestion_attributes, adv_dq_rules, \
-        support_email, freq = parse_data(payload, database)
+        support_email, freq = parse_data(payload.copy(), database)
 
     try:
         database.insert(
@@ -113,6 +114,13 @@ def create_asset(event, context, config, database):
         database.close()
         status_code = 200
         status = True
+        # creating body without ts
+        del data_asset["modified_ts"]
+        for i in data_asset_attributes:
+            del i["modified_ts"]
+        del ingestion_attributes["modified_ts"]
+        for i in adv_dq_rules:
+            del i["created_ts"]
         body = {
             "data_asset": data_asset,
             "data_asset_attributes": data_asset_attributes,
@@ -156,14 +164,10 @@ def create_asset(event, context, config, database):
 
     # -----------
 
-    # API event entry in dynamoDb
-    response = insert_event_to_dynamoDb(event, context, api_call_type)
-    return{
-        "statusCode": status_code,
-        "status": status,
-        "sourceCodeDynamoDb": response["statusCode"],
-        "body": json.loads(
-            json.dumps(body, indent=4, sort_keys=True, default=str)
-        ),
-        "payload": payload
-    }
+    response = Response(
+        method=method,
+        status=status,
+        body=body,
+        payload=payload
+    )
+    return response.get_response()

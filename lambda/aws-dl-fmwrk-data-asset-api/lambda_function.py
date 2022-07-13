@@ -5,7 +5,62 @@ from read import read_asset
 from update import update_asset
 from delete import delete_asset
 
-from api_response import Response
+
+def create(event, context, method):
+    database = get_database()
+    config = getGlobalParams()
+    api_response = create_asset(event, method, config, database)
+    # API event entry in dynamoDb
+    api_call_type = "synchronous"
+    if api_response['responseStatus']:
+        insert_event_to_dynamoDb(event, context, api_call_type)
+    else:
+        insert_event_to_dynamoDb(
+            event, context, api_call_type, status="Failed"
+        )
+    return api_response
+
+
+def read(event, context, method):
+    database = get_database()
+    api_response = read_asset(event, method, database)
+    # API event entry in dynamoDb
+    api_call_type = "synchronous"
+    if api_response['responseStatus']:
+        insert_event_to_dynamoDb(event, context, api_call_type)
+    else:
+        insert_event_to_dynamoDb(
+            event, context, api_call_type, status="Failed"
+        )
+    return api_response
+
+
+def update(event, context, method):
+    database = get_database()
+    api_response = update_asset(event, method, database)
+    # API event entry in dynamoDb
+    api_call_type = "synchronous"
+    if api_response['responseStatus']:
+        insert_event_to_dynamoDb(event, context, api_call_type)
+    else:
+        insert_event_to_dynamoDb(
+            event, context, api_call_type, status="Failed"
+        )
+    return api_response
+
+
+def delete(event, context, method):
+    database = get_database()
+    api_response = delete_asset(event, method, database)
+    # API event entry in dynamoDb
+    api_call_type = "synchronous"
+    if api_response['responseStatus']:
+        insert_event_to_dynamoDb(event, context, api_call_type)
+    else:
+        insert_event_to_dynamoDb(
+            event, context, api_call_type, status="Failed"
+        )
+    return api_response
 
 
 def lambda_handler(event, context):
@@ -19,54 +74,23 @@ def lambda_handler(event, context):
 
     if event:
         if method == "health":
-            response = Response(method, True, "body", None)
-            return response.get_response()
+            return {"statusCode": "200", "body": "API Health is good"}
 
         elif method == "create":
-            db = get_database()
-            global_config = getGlobalParams()
-            generated_response = create_asset(
-                event, context, config=global_config, database=db)
-            response = Response(
-                method=method,
-                status=generated_response["status"],
-                body=generated_response["body"],
-                payload=generated_response["payload"]
-            )
-            return response.get_response()
+            response = create(event, context, method)
+            return response
 
         elif method == "read":
-            db = get_database()
-            generated_response = read_asset(event, context, database=db)
-            response = Response(
-                method=method,
-                status=generated_response["status"],
-                body=generated_response["body"],
-                payload=generated_response["payload"]
-            )
-            return response.get_response()
+            response = read(event, context, method)
+            return response
 
         elif method == "update":
-            db = get_database()
-            generated_response = update_asset(event, context, database=db)
-            response = Response(
-                method=method,
-                status=generated_response["status"],
-                body=generated_response["body"],
-                payload=generated_response["payload"]
-            )
-            return response.get_response()
+            response = update(event, context, method)
+            return response
 
         elif method == "delete":
-            db = get_database()
-            generated_response = delete_asset(event, context, database=db)
-            response = Response(
-                method=method,
-                status=generated_response["status"],
-                body=generated_response["body"],
-                payload=generated_response["payload"]
-            )
-            return response.get_response()
+            response = delete(event, context, method)
+            return response
 
         else:
             return {"statusCode": "404", "body": "Not found"}
