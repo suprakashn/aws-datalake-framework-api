@@ -67,7 +67,7 @@ def read_asset(event, method, database):
             table="data_asset",
             cols=asset_columns,
             where=where_clause
-        )[0]
+        )
         if dict_asset:
             dict_attributes = database.retrieve_dict(
                 table="data_asset_attributes",
@@ -81,23 +81,21 @@ def read_asset(event, method, database):
                     "asset_id=%s and src_sys_id=%s",
                     [asset_id, src_sys_id]
                 )
-            )[0]
+            )
             dict_dq = database.retrieve_dict(
                 table="adv_dq_rules",
                 cols=dq_columns,
                 where=("asset_id=%s", [asset_id])
             )
-            status_code = 202
             status = True
             body = {
-                "asset_info": dict_asset,
+                "asset_info": dict_asset[0],
                 "asset_attributes": dict_attributes,
-                "ingestion_attributes": dict_ingestion,
+                "ingestion_attributes": dict_ingestion[0] if dict_ingestion else {},
                 "adv_dq_rules": dict_dq
             }
         else:
             status = False
-            status_code = 402
             body = {}
         database.close()
 
@@ -105,9 +103,7 @@ def read_asset(event, method, database):
         database.close()
         print(e)
         status = False
-        status_code = 402
         body = str(e)
-        message_body = event["body-json"]
 
     # -----------
     response = Response(
