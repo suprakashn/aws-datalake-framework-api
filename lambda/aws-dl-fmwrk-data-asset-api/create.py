@@ -166,7 +166,6 @@ def create_asset(event, method, config, database):
                 data=adv_dq_rules
             )
         database.close()
-        status_code = 200
         status = True
         # creating body without ts
         del data_asset["modified_ts"]
@@ -182,39 +181,24 @@ def create_asset(event, method, config, database):
             "adv_dq_rules": adv_dq_rules
         }
 
+        create_src_s3_dir_str(
+            asset_id=asset_id,
+            message_body=payload,
+            config=config,
+            mechanism=trigger_mechanism
+        )
+        glue_airflow_trigger(
+            asset_id=str(asset_id),
+            source_id=str(src_sys_id),
+            schedule=freq,
+            email=support_email
+        )
     except Exception as e:
         print(e)
-        status_code = 401
         status = False
         body = str(e)
         database.rollback()
         database.close()
-
-    finally:
-        if status_code == 200:
-            try:
-                create_src_s3_dir_str(
-                    asset_id=asset_id,
-                    message_body=payload,
-                    config=config,
-                    mechanism=trigger_mechanism
-                )
-            except Exception as e:
-                status_code = 401
-                status = False
-                body = {"s3_dir_error": str(e)}
-        if status_code == 200:
-            try:
-                response = glue_airflow_trigger(
-                    asset_id=str(asset_id),
-                    source_id=str(src_sys_id),
-                    schedule=freq,
-                    email=support_email
-                )
-            except Exception as e:
-                status_code = 401
-                status = False
-                body = {"airflow_error": str(e)}
 
     # -----------
 
