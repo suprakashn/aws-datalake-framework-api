@@ -43,6 +43,8 @@ def read_asset(event, method, database):
             body = {}
     except Exception as e:
         body = str(e)
+        status = False
+        database.close()
     # -----------
     response = Response(
         method=method,
