@@ -31,12 +31,18 @@ def read_asset(event, method, database):
 
         # Getting the asset id and source system id
         src_sys_id = message_body["src_sys_id"]
-        where_clause = ("src_sys_id=%s", [src_sys_id])
-        list_asset = database.retrieve_dict(
-            table="data_asset",
-            cols=asset_columns,
-            where=where_clause
-        )
+        if src_sys_id:
+            where_clause = ("src_sys_id=%s", [src_sys_id])
+            list_asset = database.retrieve_dict(
+                table="data_asset",
+                cols=asset_columns,
+                where=where_clause
+            )
+        else:
+            list_asset = database.retrieve_dict(
+                table="data_asset",
+                cols=asset_columns
+            )
         database.close()
         if list_asset:
             status = True
