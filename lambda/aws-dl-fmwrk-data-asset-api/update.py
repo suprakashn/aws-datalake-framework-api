@@ -55,10 +55,7 @@ def update_ingestion_attributes(message_body, asset_id, src_sys_id, message_keys
         )
         if "frequency" in message_body["ingestion_attributes"].keys():
             # Deleting previous dag
-            client = boto3.client("s3")
-            airflow_bucket = 'dl-fmwrk-mwaa-us-east-2'
-            file_name = f"dags/{src_sys_id}_{asset_id}_worflow.py"
-            client.delete_object(Bucket=airflow_bucket, Key=file_name)
+            os.remove(f"/mnt/dags/{src_sys_id}_{asset_id}_worflow.py")
             # Creating new dag
             freq = message_body["ingestion_attributes"]["frequency"]
             glue_airflow_trigger(
