@@ -1,6 +1,7 @@
 from utils import *
 
 from api_response import Response
+import json
 
 
 def read_asset(event, method, database):
@@ -21,7 +22,8 @@ def read_asset(event, method, database):
             "data_masking_exec_id",
             "src_file_path",
             "s3_log_path",
-            "tgt_file_path"
+            "tgt_file_path",
+            "proc_start_ts"
         ]
         # Getting the asset id and source system id
         asset_id = message_body["asset_id"]
@@ -49,7 +51,9 @@ def read_asset(event, method, database):
     response = Response(
         method=method,
         status=status,
-        body=body,
+        body=json.loads(
+            json.dumps(body, indent=4, sort_keys=True, default=str)
+        ),
         payload=message_body
     )
     return response.get_response()
