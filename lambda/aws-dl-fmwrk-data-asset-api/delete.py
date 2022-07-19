@@ -1,4 +1,3 @@
-import boto3
 from utils import *
 
 from api_response import Response
@@ -42,7 +41,7 @@ def delete_asset(event, method, database):
         )
         database.close()
         status = True
-        os.remove(f"/mnt/dags/{src_sys_id}_{asset_id}_worflow.py")
+        os.remove(f"/mnt/dags/{src_sys_id}_{asset_id}_workflow.py")
         body = f"deleted_asset : {asset_id}"
 
     except Exception as e:

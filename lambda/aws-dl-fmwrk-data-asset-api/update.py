@@ -1,4 +1,3 @@
-import boto3
 from utils import *
 
 from api_response import Response
@@ -55,7 +54,7 @@ def update_ingestion_attributes(message_body, asset_id, src_sys_id, message_keys
         )
         if "frequency" in message_body["ingestion_attributes"].keys():
             # Deleting previous dag
-            os.remove(f"/mnt/dags/{src_sys_id}_{asset_id}_worflow.py")
+            os.remove(f"/mnt/dags/{src_sys_id}_{asset_id}_workflow.py")
             # Creating new dag
             freq = message_body["ingestion_attributes"]["frequency"]
             glue_airflow_trigger(
