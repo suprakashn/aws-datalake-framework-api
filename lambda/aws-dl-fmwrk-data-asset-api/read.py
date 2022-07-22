@@ -52,8 +52,6 @@ def read_asset(event, method, database):
         "frequency"
     ]
     dq_columns = [
-        'dq_rule_id',
-        'asset_id',
         'dq_rule'
     ]
     # Getting the asset id and source system id
@@ -92,7 +90,7 @@ def read_asset(event, method, database):
                 "asset_info": dict_asset[0],
                 "asset_attributes": dict_attributes,
                 "ingestion_attributes": dict_ingestion[0] if dict_ingestion else {},
-                "adv_dq_rules": dict_dq
+                "adv_dq_rules": [i["dq_rule"] for i in dict_dq if dict_dq]
             }
         else:
             status = False
