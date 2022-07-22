@@ -39,9 +39,11 @@ def delete_asset(event, method, database):
             table="data_asset",
             where=("asset_id=%s", [asset_id])
         )
+        dag = f"/mnt/dags/{src_sys_id}_{asset_id}_workflow.py"
+        if os.path.exists(dag):
+            os.remove(dag)
         database.close()
         status = True
-        os.remove(f"/mnt/dags/{src_sys_id}_{asset_id}_workflow.py")
         body = f"deleted_asset : {asset_id}"
 
     except Exception as e:
