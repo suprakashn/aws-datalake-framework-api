@@ -56,6 +56,11 @@ def parse_ingestion_attributes(asset_id, message_body, database):
 
     src_sys_id = message_body["asset_info"]["src_sys_id"]
 
+    freq = "None"
+    if "frequency" in message_body["ingestion_attributes"].keys():
+        if message_body["ingestion_attributes"]["frequency"] != "":
+            freq = message_body["ingestion_attributes"]["frequency"]
+
     ingestion_attributes = {
         "asset_id": asset_id,
         "src_sys_id": src_sys_id,
@@ -63,8 +68,7 @@ def parse_ingestion_attributes(asset_id, message_body, database):
         "src_sql_query": None,
         "ingstn_src_path": None,
         "trigger_mechanism": message_body["ingestion_attributes"]["trigger_mechanism"],
-        "frequency": message_body["ingestion_attributes"]["frequency"] if
-        "frequency" in message_body["ingestion_attributes"].keys() else "None",
+        "frequency": freq,
         "modified_ts": datetime.utcnow()
     }
 
