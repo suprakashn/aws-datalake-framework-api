@@ -169,15 +169,14 @@ def create_asset(event, method, config, database):
                 table='adv_dq_rules',
                 data=adv_dq_rules
             )
-        database.close()
-        status = True
         # creating body without ts
         del data_asset["modified_ts"]
         for i in data_asset_attributes:
             del i["modified_ts"]
         del ingestion_attributes["modified_ts"]
-        for i in adv_dq_rules:
-            del i["created_ts"]
+        if adv_dq_rules:
+            for i in adv_dq_rules:
+                del i["created_ts"]
         body = {
             "data_asset": data_asset,
             "data_asset_attributes": data_asset_attributes,
@@ -197,6 +196,8 @@ def create_asset(event, method, config, database):
             schedule=freq,
             email=support_email
         )
+        database.close()
+        status = True
     except Exception as e:
         print(e)
         status = False
