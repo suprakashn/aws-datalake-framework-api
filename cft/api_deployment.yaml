@@ -1,0 +1,143 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+  LambdaIamRole:
+    Type: String
+    Default: arn:aws:iam::315119964270:role/dl-fmwrk-lambda-role
+  DlFmwrkPrefix:
+    Type: String
+    Default: dl-fmwrk
+  Environment:
+    Type: String
+    Default: prod
+
+Resources:
+  DataAssetAPI:
+    Type: AWS::Lambda::Function
+    Properties:
+      Architectures:
+        - x86_64
+      FunctionName: !Sub "aws-${DlFmwrkPrefix}-data-asset-api-${Environment}"
+      Code:
+        S3Bucket: lambda-deployment-test-2
+        S3Key: aws-dl-fmwrk-data-asset-api.zip
+      Handler: lambda_function.lambda_handler
+      Role: !Ref LambdaIamRole
+      Runtime: python3.7
+      Environment:
+        Variables:
+          aws_account: 315119964270
+          secret_name: dl-fmwrk-metadata-dev
+          secret_region: us-east-2
+      Layers:
+        - !Ref LambdaLayer
+      Timeout: 10
+      FileSystemConfigs:
+        - Arn: arn:aws:elasticfilesystem:us-east-2:315119964270:access-point/fsap-0994f833b81d0920b
+          LocalMountPath: /mnt/dags
+      VpcConfig:
+        SecurityGroupIds:
+          - sg-007fcde876fd52f62
+        SubnetIds:
+          - subnet-03f0155c49645e5b6
+          - subnet-0a4e37a0bdf041cd5
+          - subnet-0a7dd7bcf53b3e27e
+  DataAssetCatalogAPI:
+    Type: AWS::Lambda::Function
+    Properties:
+      Architectures:
+        - x86_64
+      FunctionName: !Sub "aws-${DlFmwrkPrefix}-data-catalog-api-${Environment}"
+      Code:
+        S3Bucket: lambda-deployment-test-2
+        S3Key: aws-dl-fmwrk-data-asset-catalogs-api.zip
+      Handler: lambda_function.lambda_handler
+      Role: !Ref LambdaIamRole
+      Runtime: python3.7
+      Environment:
+        Variables:
+          aws_account: 315119964270
+          secret_name: dl-fmwrk-metadata-dev
+          secret_region: us-east-2
+      Layers:
+        - !Ref LambdaLayer
+  DataAssetInfoAPI:
+    Type: AWS::Lambda::Function
+    Properties:
+      Architectures:
+        - x86_64
+      FunctionName: !Sub "aws-${DlFmwrkPrefix}-data-asset-info-api-${Environment}"
+      Code:
+        S3Bucket: lambda-deployment-test-2
+        S3Key: aws-dl-fmwrk-data-asset-info-api.zip
+      Handler: lambda_function.lambda_handler
+      Role: !Ref LambdaIamRole
+      Runtime: python3.7
+      Environment:
+        Variables:
+          aws_account: 315119964270
+          secret_name: dl-fmwrk-metadata-dev
+          secret_region: us-east-2
+      Layers:
+        - !Ref LambdaLayer
+  SourceSystemAPI:
+    Type: AWS::Lambda::Function
+    Properties:
+      Architectures:
+        - x86_64
+      FunctionName: !Sub "aws-${DlFmwrkPrefix}-source-system-api-${Environment}"
+      Code:
+        S3Bucket: lambda-deployment-test-2
+        S3Key: aws-dl-fmwrk-source-system-api.zip
+      Handler: lambda_function.lambda_handler
+      Role: !Ref LambdaIamRole
+      Runtime: python3.7
+      Environment:
+        Variables:
+          aws_account: 315119964270
+          db_region: us-east-2
+          db_secret: dl-fmwrk-metadata-dev
+          region: us-east-2
+      Layers:
+        - !Ref LambdaLayer
+      Timeout: 12
+  TargetSystemAPI:
+    Type: AWS::Lambda::Function
+    Properties:
+      Architectures:
+        - x86_64
+      FunctionName: !Sub "aws-${DlFmwrkPrefix}-target-system-api-${Environment}"
+      Code:
+        S3Bucket: lambda-deployment-test-2
+        S3Key: aws-dl-fmwrk-target-system-api.zip
+      Handler: lambda_function.lambda_handler
+      Role: !Ref LambdaIamRole
+      Runtime: python3.7
+      Environment:
+        Variables:
+          aws_account: 315119964270
+          rs_secret: dl-fmwrk-redshift-dev
+          db_secret: dl-fmwrk-metadata-dev
+          region: us-east-2
+      Layers:
+        - !Ref LambdaLayer
+      Timeout: 10
+  LambdaLayer:
+    Type: AWS::Lambda::LayerVersion
+    Properties:
+      CompatibleRuntimes:
+        - python3.6
+        - python3.7
+        - python3.8
+        - python3.9
+      CompatibleArchitectures:
+        - x86_64
+      Content:
+        S3Bucket: lambda-deployment-test-2
+        S3Key: pg_connect.zip
+      Description: Layer to connect to database
+      LayerName: pg_connect_test
+Outputs:
+  LambdaDataIngestion:
+    Description: Latest Commit to be updated here
+    Value: Updated test function function
