@@ -1,5 +1,26 @@
 from api_response import Response
-from api_exceptions import EntryDoesntExist
+
+
+cols = [
+        'target_id', 'domain', 'subdomain',
+        'bucket_name', 'data_owner', 'support_cntct',
+        'rs_load_ind', 'rs_db_nm', 'rs_schema_nm'
+        ]
+
+
+def read_multiple(metadata_db, global_config, target_ids):
+    """
+
+    :param global_config:
+    :param metadata_db:
+    :param target_ids:
+    :return:
+    """
+    table = global_config['target_sys_table']
+    target_id_tuple = tuple(target_ids)
+    condition = ("target_id in %s", [target_id_tuple])
+    target_info = metadata_db.retrieve_dict(table=table, cols=cols, where=condition)
+    return target_info
 
 
 def read_target_system(
@@ -16,16 +37,17 @@ def read_target_system(
     :return:
     """
     target_info = None
-    cols = [
-        'target_id', 'domain', 'subdomain',
-        'bucket_name', 'data_owner', 'support_cntct',
-        'rs_load_ind', 'rs_db_nm', 'rs_schema_nm'
-        ]
     table = global_config['target_sys_table']
     if fetch_limit in [None, 'None', '0', 'NONE'] and source_payload:
-        target_id = int(source_payload['target_id'])
-        condition = ("target_id=%s", [target_id])
-        target_info = metadata_db.retrieve_dict(table=table, cols=cols, where=condition)
+        target_id = source_payload['target_id']
+        if isinstance(target_id, list):
+            target_info = read_multiple(metadata_db, global_config, target_id)
+        else:
+            target_id = int(target_id) if isinstance(target_id, str) else target_id
+            condition = ("target_id=%s", [target_id])
+            target_info = metadata_db.retrieve_dict(
+                table=table, cols=cols, where=condition
+            )
     # if a fetch limit exists then fetch all the cols of limited target_systems
     elif isinstance(fetch_limit, int) or fetch_limit.isdigit():
         limit = int(fetch_limit)

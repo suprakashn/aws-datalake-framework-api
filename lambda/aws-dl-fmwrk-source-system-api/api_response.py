@@ -21,23 +21,23 @@ class Response:
             else:
                 self.response_code = 400
                 self.response_message = (
-                    "There was an error in creating the resource as requested: "
+                    "The API is not functional at this moment"
                     + self.message
                 )
         elif self.method == "CREATE":
             if self.response_status:
                 self.response_code = 201
-                self.response_message = "Successfully created the resource as requested"
+                self.response_message = "Successfully created the source system as per the specifications provided"
             else:
                 self.response_code = 401
                 self.response_message = (
-                    "There was an error in creating the resource as requested: "
+                    "There was an error in creating the source system as per the specifications: "
                     + self.message
                 )
         elif self.method == "READ":
             if self.response_status:
                 self.response_code = 202
-                self.response_message = "Data Successfully retrieved as requested"
+                self.response_message = "Data Successfully retrieved as requested from the source system table"
             else:
                 self.response_code = 402
                 self.response_message = (

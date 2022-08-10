@@ -168,12 +168,16 @@ def create_redshift_schema(target_data, rs_conn):
     :param rs_conn:
     :return:
     """
-    schema = target_data['subdomain']
-    if redshift_schema_exists(rs_conn, schema):
-        print(f"Schema {schema} exists")
+    rs_load_ind = target_data['rs_load_ind']
+    if rs_load_ind:
+        schema = target_data['subdomain']
+        if redshift_schema_exists(rs_conn, schema):
+            print(f"Schema {schema} exists")
+        else:
+            print(f"Creating a new Schema: {schema}")
+            rs_conn.create_schema(schema)
     else:
-        print(f"Creating a new Schema: {schema}")
-        rs_conn.create_schema(schema)
+        print("Not Creating a Schema in Redshift since load_ind is DISABLED")
 
 
 def insert_metadata(metadata_conn, target_table, target_data):
