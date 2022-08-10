@@ -80,14 +80,21 @@ Resources:
                   s3.meta.client.upload_file(
                       f"/tmp/{name}.zip", tgt, f"{tgt_key}/{name}.zip")
                   print(f"uploaded to {tgt}/{tgt_key} as {name}.zip")
-                  return f"{tgt}/{tgt_key}/{name}.zip"
+                  res = f"{tgt}/{tgt_key}/{name}.zip"
               else:
                   s3.Object(tgt, f"{name}.zip").delete()
                   s3.meta.client.upload_file(
                       f"/tmp/{name}.zip", tgt, f"{name}.zip")
                   print(f"uploaded to {tgt} as {name}.zip")
-                  return f"{tgt}/{name}.zip"
-
+                  res = f"{tgt}/{name}.zip"
+              dir = '/tmp/'
+              for files in os.listdir(dir):
+                  path = os.path.join(dir, files)
+                  try:
+                      shutil.rmtree(path)
+                  except OSError:
+                      os.remove(path)
+              return res
 
           def lambda_handler(event, context):
               code_bucket = os.environ['code_bucket']
