@@ -10,6 +10,12 @@ Parameters:
   Environment:
     Type: String
     Default: prod
+  CodeBucket:
+    Type: String
+    Default: dl-fmwrk-code-us-east-2
+  CodeBucketPath:
+    Type: String
+    Default: dev/aws-datalake-framework-api/zip-files
 
 Resources:
   DataAssetAPI:
@@ -19,8 +25,8 @@ Resources:
         - x86_64
       FunctionName: !Sub "aws-${DlFmwrkPrefix}-data-asset-api-${Environment}"
       Code:
-        S3Bucket: lambda-deployment-test-2
-        S3Key: aws-dl-fmwrk-data-asset-api.zip
+        S3Bucket: !Ref CodeBucket
+        S3Key: !sub "{CodeBucketPath}/aws-dl-fmwrk-data-asset-api.zip"
       Handler: lambda_function.lambda_handler
       Role: !Ref LambdaIamRole
       Runtime: python3.7
@@ -49,8 +55,8 @@ Resources:
         - x86_64
       FunctionName: !Sub "aws-${DlFmwrkPrefix}-data-catalog-api-${Environment}"
       Code:
-        S3Bucket: lambda-deployment-test-2
-        S3Key: aws-dl-fmwrk-data-asset-catalogs-api.zip
+        S3Bucket: !Ref CodeBucket
+        S3Key: !sub "{CodeBucketPath}/aws-dl-fmwrk-data-asset-catalogs-api.zip
       Handler: lambda_function.lambda_handler
       Role: !Ref LambdaIamRole
       Runtime: python3.7
@@ -68,8 +74,8 @@ Resources:
         - x86_64
       FunctionName: !Sub "aws-${DlFmwrkPrefix}-data-asset-info-api-${Environment}"
       Code:
-        S3Bucket: lambda-deployment-test-2
-        S3Key: aws-dl-fmwrk-data-asset-info-api.zip
+        S3Bucket: !Ref CodeBucket
+        S3Key: !sub "{CodeBucketPath}/aws-dl-fmwrk-data-asset-info-api.zip"
       Handler: lambda_function.lambda_handler
       Role: !Ref LambdaIamRole
       Runtime: python3.7
@@ -87,8 +93,8 @@ Resources:
         - x86_64
       FunctionName: !Sub "aws-${DlFmwrkPrefix}-source-system-api-${Environment}"
       Code:
-        S3Bucket: lambda-deployment-test-2
-        S3Key: aws-dl-fmwrk-source-system-api.zip
+        S3Bucket: !Ref CodeBucket
+        S3Key: !sub "{CodeBucketPath}/aws-dl-fmwrk-source-system-api.zip"
       Handler: lambda_function.lambda_handler
       Role: !Ref LambdaIamRole
       Runtime: python3.7
@@ -108,8 +114,8 @@ Resources:
         - x86_64
       FunctionName: !Sub "aws-${DlFmwrkPrefix}-target-system-api-${Environment}"
       Code:
-        S3Bucket: lambda-deployment-test-2
-        S3Key: aws-dl-fmwrk-target-system-api.zip
+        S3Bucket: !Ref CodeBucket
+        S3Key: !sub "{CodeBucketPath}/aws-dl-fmwrk-target-system-api.zip"
       Handler: lambda_function.lambda_handler
       Role: !Ref LambdaIamRole
       Runtime: python3.7
@@ -133,8 +139,8 @@ Resources:
       CompatibleArchitectures:
         - x86_64
       Content:
-        S3Bucket: lambda-deployment-test-2
-        S3Key: pg_connect.zip
+        S3Bucket: !Ref CodeBucket
+        S3Key: !sub "{CodeBucketPath}/pg_connect.zip"
       Description: Layer to connect to database
       LayerName: pg_connect_test
 Outputs:

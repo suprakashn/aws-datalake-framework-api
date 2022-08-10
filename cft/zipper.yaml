@@ -78,13 +78,13 @@ Resources:
           def lambda_handler(event, context):
               code_bucket = "dl-fmwrk-code-us-east-2"
               target_bucket = "dl-fmwrk-code-us-east-2"
-              target_key = "dev/aws-datalake-framework-api"
+              target_key = "dev/aws-datalake-framework-api/zip-files"
               dl_dict = {
-                  "aws-dl-fmwrk-data-asset-api": "aws-datalake-framework-api/lambda/aws-dl-fmwrk-data-asset-api/",
-                  "aws-dl-fmwrk-data-asset-catalogs-api": "aws-datalake-framework-api/lambda/aws-dl-fmwrk-data-asset-catalogs-api/",
-                  "aws-dl-fmwrk-source-system-api": "aws-datalake-framework-api/lambda/aws-dl-fmwrk-source-system-api/",
-                  "aws-dl-fmwrk-target-system-api": "aws-datalake-framework-api/lambda/aws-dl-fmwrk-target-system-api/",
-                  "aws-dl-fmwrk-data-asset-info-api": "aws-datalake-framework-api/lambda/aws-dl-fmwrk-data-asset-info-api/"
+                  "aws-dl-fmwrk-data-asset-api": "dev/aws-datalake-framework-api/lambda/aws-dl-fmwrk-data-asset-api/",
+                  "aws-dl-fmwrk-data-asset-catalogs-api": "dev/aws-datalake-framework-api/lambda/aws-dl-fmwrk-data-asset-catalogs-api/",
+                  "aws-dl-fmwrk-source-system-api": "dev/aws-datalake-framework-api/lambda/aws-dl-fmwrk-source-system-api/",
+                  "aws-dl-fmwrk-target-system-api": "dev/aws-datalake-framework-api/lambda/aws-dl-fmwrk-target-system-api/",
+                  "aws-dl-fmwrk-data-asset-info-api": "dev/aws-datalake-framework-api/lambda/aws-dl-fmwrk-data-asset-info-api/"
               }
               body = {"status": 200, "uploaded_files": []}
               for obj in dl_dict:
