@@ -26,7 +26,7 @@ Resources:
       FunctionName: !Sub "aws-${DlFmwrkPrefix}-data-asset-api-${Environment}"
       Code:
         S3Bucket: !Ref CodeBucket
-        S3Key: !sub "{CodeBucketPath}/aws-dl-fmwrk-data-asset-api.zip"
+        S3Key: !Sub "{CodeBucketPath}/aws-dl-fmwrk-data-asset-api.zip"
       Handler: lambda_function.lambda_handler
       Role: !Ref LambdaIamRole
       Runtime: python3.7
@@ -56,7 +56,7 @@ Resources:
       FunctionName: !Sub "aws-${DlFmwrkPrefix}-data-catalog-api-${Environment}"
       Code:
         S3Bucket: !Ref CodeBucket
-        S3Key: !sub "{CodeBucketPath}/aws-dl-fmwrk-data-asset-catalogs-api.zip
+        S3Key: !Sub "{CodeBucketPath}/aws-dl-fmwrk-data-asset-catalogs-api.zip"
       Handler: lambda_function.lambda_handler
       Role: !Ref LambdaIamRole
       Runtime: python3.7
@@ -75,7 +75,7 @@ Resources:
       FunctionName: !Sub "aws-${DlFmwrkPrefix}-data-asset-info-api-${Environment}"
       Code:
         S3Bucket: !Ref CodeBucket
-        S3Key: !sub "{CodeBucketPath}/aws-dl-fmwrk-data-asset-info-api.zip"
+        S3Key: !Sub "{CodeBucketPath}/aws-dl-fmwrk-data-asset-info-api.zip"
       Handler: lambda_function.lambda_handler
       Role: !Ref LambdaIamRole
       Runtime: python3.7
@@ -94,7 +94,7 @@ Resources:
       FunctionName: !Sub "aws-${DlFmwrkPrefix}-source-system-api-${Environment}"
       Code:
         S3Bucket: !Ref CodeBucket
-        S3Key: !sub "{CodeBucketPath}/aws-dl-fmwrk-source-system-api.zip"
+        S3Key: !Sub "{CodeBucketPath}/aws-dl-fmwrk-source-system-api.zip"
       Handler: lambda_function.lambda_handler
       Role: !Ref LambdaIamRole
       Runtime: python3.7
@@ -115,7 +115,7 @@ Resources:
       FunctionName: !Sub "aws-${DlFmwrkPrefix}-target-system-api-${Environment}"
       Code:
         S3Bucket: !Ref CodeBucket
-        S3Key: !sub "{CodeBucketPath}/aws-dl-fmwrk-target-system-api.zip"
+        S3Key: !Sub "{CodeBucketPath}/aws-dl-fmwrk-target-system-api.zip"
       Handler: lambda_function.lambda_handler
       Role: !Ref LambdaIamRole
       Runtime: python3.7
