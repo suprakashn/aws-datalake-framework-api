@@ -69,7 +69,7 @@ Resources:
                   return f"{tgt}/{tgt_key}/{name}.zip"
               else:
                   s3.Object(tgt, f"{name}.zip").delete()
-                  s3.meta.client.upload_fil(
+                  s3.meta.client.upload_file(
                       f"/tmp/{name}.zip", tgt, f"{name}.zip")
                   print(f"uploaded to {tgt} as {name}.zip")
                   return f"{tgt}/{name}.zip"
