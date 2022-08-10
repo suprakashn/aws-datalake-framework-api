@@ -1,7 +1,6 @@
 from utils import *
 
 from api_response import Response
-import json
 
 
 def read_asset(event, method, database):
@@ -10,36 +9,44 @@ def read_asset(event, method, database):
     # API logic here
     # -----------
     try:
-        catalog_columns = [
-            "exec_id",
-            "src_sys_id",
+        asset_columns = [
             "asset_id",
-            "dq_validation",
-            "data_publish",
-            "data_masking",
-            "dq_validation_exec_id",
-            "data_publish_exec_id",
-            "data_masking_exec_id",
-            "src_file_path",
-            "s3_log_path",
-            "tgt_file_path",
-            "proc_start_ts"
+            "src_sys_id",
+            "target_id",
+            "file_header",
+            "multipartition",
+            "file_type",
+            "asset_nm",
+            "source_path",
+            "target_path",
+            "trigger_file_pattern",
+            "file_delim",
+            "file_encryption_ind",
+            "athena_table_name",
+            "asset_owner",
+            "support_cntct",
+            "rs_load_ind",
+            "rs_stg_table_nm"
         ]
+
         # Getting the asset id and source system id
-        asset_id = message_body["asset_id"]
         src_sys_id = message_body["src_sys_id"]
-        # Where clause
-        where_clause = ("asset_id=%s and src_sys_id=%s",
-                        [asset_id, src_sys_id])
-        dict_catalog = database.retrieve_dict(
-            table="data_asset_catalogs",
-            cols=catalog_columns,
-            where=where_clause
-        )
+        if src_sys_id:
+            where_clause = ("src_sys_id=%s", [src_sys_id])
+            list_asset = database.retrieve_dict(
+                table="data_asset",
+                cols=asset_columns,
+                where=where_clause
+            )
+        else:
+            list_asset = database.retrieve_dict(
+                table="data_asset",
+                cols=asset_columns
+            )
         database.close()
-        if dict_catalog:
+        if list_asset:
             status = True
-            body = dict_catalog
+            body = list_asset
         else:
             status = False
             body = {}
@@ -47,13 +54,12 @@ def read_asset(event, method, database):
         body = str(e)
         status = False
         database.close()
+
     # -----------
     response = Response(
         method=method,
         status=status,
-        body=json.loads(
-            json.dumps(body, indent=4, sort_keys=True, default=str)
-        ),
+        body=body,
         payload=message_body
     )
     return response.get_response()
