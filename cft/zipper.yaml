@@ -4,6 +4,15 @@ Parameters:
   LambdaIamRole:
     Type: String
     Default: arn:aws:iam::315119964270:role/dl-fmwrk-lambda-role
+  Environment:
+    Type: String
+    Default: prod
+  CodeBucket:
+    Type: String
+    Default: dl-fmwrk-code-us-east-2
+  TargetBucket:
+    Type: String
+    Default: dl-fmwrk-code-us-east-2
 Resources:
   Zipper:
     Type: AWS::Lambda::Function
@@ -15,6 +24,11 @@ Resources:
       Runtime: python3.7
       Timeout: 10
       Role: !Ref LambdaIamRole
+      Environment:
+        Variables:
+          code_bucket: !Ref CodeBucket
+          target_bucket: !Ref TargetBucket
+          env: !Ref Environment
       Code:
         ZipFile: |
           import boto3
@@ -76,15 +90,16 @@ Resources:
 
 
           def lambda_handler(event, context):
-              code_bucket = "dl-fmwrk-code-us-east-2"
-              target_bucket = "dl-fmwrk-code-us-east-2"
-              target_key = "dev/aws-datalake-framework-api/zip-files"
+              code_bucket = os.environ['code_bucket']
+              target_bucket = os.environ['target_bucket']
+              env = os.environ['env']
+              target_key = f"{env}/aws-datalake-framework-api/zip-files"
               dl_dict = {
-                  "aws-dl-fmwrk-data-asset-api": "dev/aws-datalake-framework-api/lambda/aws-dl-fmwrk-data-asset-api/",
-                  "aws-dl-fmwrk-data-asset-catalogs-api": "dev/aws-datalake-framework-api/lambda/aws-dl-fmwrk-data-asset-catalogs-api/",
-                  "aws-dl-fmwrk-source-system-api": "dev/aws-datalake-framework-api/lambda/aws-dl-fmwrk-source-system-api/",
-                  "aws-dl-fmwrk-target-system-api": "dev/aws-datalake-framework-api/lambda/aws-dl-fmwrk-target-system-api/",
-                  "aws-dl-fmwrk-data-asset-info-api": "dev/aws-datalake-framework-api/lambda/aws-dl-fmwrk-data-asset-info-api/"
+                  "aws-dl-fmwrk-data-asset-api": f"{env}/aws-datalake-framework-api/lambda/aws-dl-fmwrk-data-asset-api/",
+                  "aws-dl-fmwrk-data-asset-catalogs-api": f"{env}/aws-datalake-framework-api/lambda/aws-dl-fmwrk-data-asset-catalogs-api/",
+                  "aws-dl-fmwrk-source-system-api": f"{env}/aws-datalake-framework-api/lambda/aws-dl-fmwrk-source-system-api/",
+                  "aws-dl-fmwrk-target-system-api": f"{env}/aws-datalake-framework-api/lambda/aws-dl-fmwrk-target-system-api/",
+                  "aws-dl-fmwrk-data-asset-info-api": f"{env}/aws-datalake-framework-api/lambda/aws-dl-fmwrk-data-asset-info-api/"
               }
               body = {"status": 200, "uploaded_files": []}
               for obj in dl_dict:
