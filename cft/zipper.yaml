@@ -69,7 +69,7 @@ Resources:
                   return f"{tgt}/{tgt_key}/{name}.zip"
               else:
                   s3.Object(tgt, f"{name}.zip").delete()
-                  s3.meta.client.upload_file(
+                  s3.meta.client.upload_fil(
                       f"/tmp/{name}.zip", tgt, f"{name}.zip")
                   print(f"uploaded to {tgt} as {name}.zip")
                   return f"{tgt}/{name}.zip"
@@ -84,8 +84,7 @@ Resources:
                   "aws-dl-fmwrk-data-asset-catalogs-api": "dev/aws-datalake-framework-api/lambda/aws-dl-fmwrk-data-asset-catalogs-api/",
                   "aws-dl-fmwrk-source-system-api": "dev/aws-datalake-framework-api/lambda/aws-dl-fmwrk-source-system-api/",
                   "aws-dl-fmwrk-target-system-api": "dev/aws-datalake-framework-api/lambda/aws-dl-fmwrk-target-system-api/",
-                  "aws-dl-fmwrk-data-asset-info-api": "dev/aws-datalake-framework-api/lambda/aws-dl-fmwrk-data-asset-info-api/",
-                  "test": "blablabla"
+                  "aws-dl-fmwrk-data-asset-info-api": "dev/aws-datalake-framework-api/lambda/aws-dl-fmwrk-data-asset-info-api/"
               }
               body = {"status": 200, "uploaded_files": []}
               for obj in dl_dict:
