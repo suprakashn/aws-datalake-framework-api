@@ -69,11 +69,11 @@ Resources:
                   tgt_key: path of the target
               """
               # download the files into tmp/zip/ folder
-              download_s3_folder(src, src_key, "/tmp/zip/")
+              download_s3_folder(src, src_key, "/tmp/zip/{name}/")
               # zip the contents of tmp/zip/ folder
               shutil.make_archive(base_name=f"/tmp/{name}",
-                                  format="zip", root_dir="/tmp/zip/")
-              print(f"zipped in /tmp/zip/ folder as {name}.zip")
+                                  format="zip", root_dir="/tmp/zip/{name}/")
+              print(f"zipped in /tmp/ folder as {name}.zip")
               # once zipped in temp copy it to your preferred s3 location
               if tgt_key:
                   s3.Object(tgt, f"{tgt_key}/{name}.zip").delete()
