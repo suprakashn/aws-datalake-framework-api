@@ -77,6 +77,12 @@ def target_present(db, global_config, target_id):
         return False
 
 
+def empty_bucket(bucket_name):
+    s3 = boto3.resource('s3')
+    bucket = s3.Bucket(bucket_name)
+    bucket.objects.all().delete()
+
+
 def delete_target_sys_stack(global_config, target_id, region):
     """
 
@@ -141,22 +147,25 @@ def delete_redshift(redshift_conn, rs_db, rs_schema):
     :param rs_schema:
     :return:
     """
-    if rs_db and rs_schema:
-        redshift_conn.switch_database(rs_db)
-        # verify schema exists
-        if redshift_conn.verify_schema_exists(rs_schema):
-            # check if tables are present in the schema
-            tables = redshift_conn.list_tables_in_schema(rs_schema)
-            # If no tables are present drop the schema
-            # If tables are present then do nothing
-            if tables:
-                print("Tables exist cannot delete the schema")
+    if redshift_conn:
+        if rs_db and rs_schema:
+            redshift_conn.switch_database(rs_db)
+            # verify schema exists
+            if redshift_conn.verify_schema_exists(rs_schema):
+                # check if tables are present in the schema
+                tables = redshift_conn.list_tables_in_schema(rs_schema)
+                # If no tables are present drop the schema
+                # If tables are present then do nothing
+                if tables:
+                    print("Tables exist cannot delete the schema")
+                else:
+                    redshift_conn.delete_schema(rs_schema)
             else:
-                redshift_conn.delete_schema(rs_schema)
+                print("Schema doesn't exist")
         else:
-            print("Schema doesn't exist")
+            print("No DB and Schema Exist for the resource")
     else:
-        print("No DB and Schema Exist for the resource")
+        print("Connection to the Redshift Cluster is unavailable at the moment.")
 
 
 def delete_target_system(
@@ -176,6 +185,7 @@ def delete_target_system(
     """
     status = False
     target_info = target_present(metadata_conn, global_config, target_id)
+    target_bucket = f"{global_config['fm_tgt_prefix']}-{target_id}-{region}"
     if target_info:
         associated = is_associated_with_asset(metadata_conn, target_id)
         if not associated:
@@ -183,8 +193,9 @@ def delete_target_system(
                 status = True
                 rs_db = target_info['rs_db_nm']
                 rs_schema = target_info['rs_schema_nm']
-                delete_rds_entry(metadata_conn, global_config, target_id)
+                empty_bucket(target_bucket)
                 delete_target_sys_stack(global_config, target_id, region)
+                delete_rds_entry(metadata_conn, global_config, target_id)
                 delete_redshift(redshift_conn, rs_db, rs_schema)
                 resp_ob = Response(
                     method, status, body=None, payload=source_payload

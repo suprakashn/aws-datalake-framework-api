@@ -5,7 +5,6 @@ from read import read_target_system
 from update import update_target_system
 from delete import delete_target_system
 
-
 config_file_path = "config/globalConfig.json"
 file = open(file=config_file_path, mode="r")
 global_config = json.load(file)
@@ -91,7 +90,7 @@ def delete_target_sys(method, metadata_db, redshift_db, event, context):
     # API logic here
     target_id = int(target_config['target_id'])
     api_response = delete_target_system(
-        method, metadata_db, redshift_db, global_config, target_id, region,  message_body
+        method, metadata_db, redshift_db, global_config, target_id, region, message_body
     )
     insert_event_to_dynamoDb(event, context, api_call_type)
     return api_response
@@ -105,10 +104,16 @@ def lambda_handler(event, context):
     rs_secret = os.environ['rs_secret']
     region = os.environ['region']
     metadata_conn = Connector(db_secret, region, autocommit=True)
-    redshift_conn = RedshiftConnector(
-        'dev', secret=rs_secret, region=region,
-        autocommit=True, create_db=True
-    )
+    if "rs_load_ind" in event["body-json"]["target_config"]:
+        if event["body-json"]["target_config"]["rs_load_ind"]:
+            redshift_conn = RedshiftConnector(
+                'dev', secret=rs_secret, region=region,
+                autocommit=True, create_db=True
+            )
+        else:
+            redshift_conn = None
+    else:
+        redshift_conn = None
     print(event)
     print(taskType)
     print(method)

@@ -3,6 +3,6 @@
   "primary_region": "us-east-2",
   "secondary_region": "us-east-1",
   "target_sys_table": "target_system",
-  "workgroup": "dl-fmwrk-us-east-2",
-  "athena_query_path" : "s3://dl-fmwrk-athena-us-east-2/query_results/"
+  "workgroup": "dl-fmwrk-athena-us-east-2",
+  "athena_query_path" : "s3://dl-fmwrk-athena-us-east-2/"
 }

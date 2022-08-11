@@ -1,6 +1,5 @@
 from datetime import datetime
 from api_response import Response
-from api_exceptions import NonEditableParams
 
 
 def update_target_system(method, db, target_config: dict, global_config: dict):

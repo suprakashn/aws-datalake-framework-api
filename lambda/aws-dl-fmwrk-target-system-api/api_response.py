@@ -66,6 +66,7 @@ class Response:
         elif not self.method:
             self.response_code = 400
             self.response_message = "Please check the method provided"
+
         response = {
             "responseStatus": self.response_status,
             "responseCode": self.response_code,

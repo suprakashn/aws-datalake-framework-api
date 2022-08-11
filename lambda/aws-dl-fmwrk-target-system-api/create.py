@@ -152,12 +152,14 @@ def create_redshift_db(target_data, rs_conn):
     :return:
     """
     # check if the DB exists or not
-    db_name = target_data['domain']
-    if redshift_db_exists(rs_conn, db_name):
-        print(f"DB {db_name} exists")
-    else:
-        rs_conn.create_database(db_name)
-    rs_conn.switch_database(db_name)
+    rs_load_ind = target_data['rs_load_ind']
+    if rs_load_ind:
+        db_name = target_data['domain']
+        if redshift_db_exists(rs_conn, db_name):
+            print(f"DB {db_name} exists")
+        else:
+            rs_conn.create_database(db_name)
+        rs_conn.switch_database(db_name)
     return rs_conn
 
 
