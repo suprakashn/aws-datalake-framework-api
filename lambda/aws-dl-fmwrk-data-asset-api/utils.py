@@ -1,15 +1,13 @@
+from connector import Connector
+import boto3
 import os
 from datetime import datetime
 from random import randint
 import json
 
-import boto3
-
-from connector import Connector
-
 
 def getGlobalParams():
-    with open('globalConfig.json', "r") as json_file:
+    with open('config/globalConfig.json', "r") as json_file:
         json_config = json.load(json_file)
         return json_config
 
@@ -74,14 +72,13 @@ def create_src_s3_dir_str(asset_id, message_body, config, mechanism):
     )
 
 
-def glue_airflow_trigger(source_id, asset_id, schedule):
+def glue_airflow_trigger(source_id, asset_id, schedule, email=None):
     s3_client = boto3.client("s3")
     template_bucket = 'dl-fmwrk-code-us-east-2'
-    airflow_bucket = 'dl-fmwrk-mwaa-us-east-2'
 
-    template_object_key = "airflow-template/dl_fmwrk_dag_template.py"
-    dag_id = f"{source_id}_{asset_id}_worflow"
-    file_name = f"dags/{source_id}_{asset_id}_worflow.py"
+    template_object_key = "aws-datalake-framework-ingestion/airflow/template/dl_fmwrk_dag_template.py"
+    dag_id = f"{source_id}_{asset_id}_workflow"
+    file_name = f"/mnt/dags/{source_id}_{asset_id}_workflow.py"
 
     file_content = s3_client.get_object(
         Bucket=template_bucket, Key=template_object_key)["Body"].read()
@@ -90,17 +87,20 @@ def glue_airflow_trigger(source_id, asset_id, schedule):
     file_content = file_content.replace("src_sys_id_placeholder", source_id)
     file_content = file_content.replace("ast_id_placeholder", asset_id)
     file_content = file_content.replace("dag_id_placeholder", dag_id)
+    if email:
+        file_content = file_content.replace("email_placeholder", email)
     if schedule == "None":
         file_content = file_content.replace('"schedule_placeholder"', "None")
     else:
         file_content = file_content.replace("schedule_placeholder", schedule)
 
     file = bytes(file_content, encoding='utf-8')
-    s3_client.put_object(Bucket=airflow_bucket, Body=file, Key=file_name)
+    with open(file_name, "wb") as dag_file:
+        dag_file.write(file)
 
     return {
         'statusCode': 200,
-        'body': f"Upload succeeded: {file_name} has been uploaded to Amazon S3 in bucket {airflow_bucket}"
+        'body': f"Upload succeeded: {dag_id}.py has been uploaded to Airflow Dags folder"
     }
 
 
@@ -110,7 +110,7 @@ def insert_event_to_dynamoDb(event, context, api_call_type, status="success", op
     log_group_name = context.log_group_name
     log_stream_name = context.log_stream_name
     function_name = context.function_name
-    method_name = event["context"]["method-path"]
+    method_name = event["context"]["resource-path"]
     query_string = event["params"]["querystring"]
     payload = event["body-json"]
 
@@ -129,7 +129,7 @@ def insert_event_to_dynamoDb(event, context, api_call_type, status="success", op
                 "payload": payload,
                 "api_call_type": api_call_type,
                 "modified ts": str(cur_time),
-                "response_status": status,
+                "status": status,
             })
     else:
         response = table.update_item(
@@ -138,7 +138,7 @@ def insert_event_to_dynamoDb(event, context, api_call_type, status="success", op
                 'method_name': method_name,
             },
             ConditionExpression="attribute_exists(aws_request_id)",
-            UpdateExpression='SET response_status = :val1',
+            UpdateExpression='SET status = :val1',
             ExpressionAttributeValues={
                 ':val1': status,
             }
@@ -157,6 +157,7 @@ def insert_event_to_dynamoDb(event, context, api_call_type, status="success", op
 
 
 def parse_adv_dq(body, asset_id, src_id):
+    print(body)
     if 'adv_dq_rules' in body.keys():
         if body['adv_dq_rules']:
             input_rules = body['adv_dq_rules']
@@ -176,18 +177,17 @@ def parse_adv_dq(body, asset_id, src_id):
 def delete_adv_dq(db, asset_id):
     where_clause = ("asset_id=%s", [asset_id])
     db.delete(
-            table="adv_dq_rules",
-            where=where_clause
-        )
+        table="adv_dq_rules",
+        where=where_clause
+    )
     db.commit()
 
 
 def update_adv_dq(db, body, src_id, asset_id):
     delete_adv_dq(db, asset_id)
     dq_rules = parse_adv_dq(body, asset_id, src_id)
-    db.update(
+    print(dq_rules)
+    db.insert_many(
         table='adv_dq_rules',
         data=dq_rules
     )
-
-
