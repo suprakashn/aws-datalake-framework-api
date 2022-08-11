@@ -39,6 +39,13 @@ def delete_asset(event, method, database):
             table="data_asset",
             where=("asset_id=%s", [asset_id])
         )
+        ingestion_pattern = database.retrieve_dict(
+        table="source_system_ingstn_atrbts",
+        cols="ingstn_pattern",
+        where=("src_sys_id=%s", [src_sys_id])
+        )[0]["ingstn_pattern"]
+        if ingestion_pattern=="stream":
+            delete_delivery_stream(src_sys_id,asset_id)
         dag = f"/mnt/dags/{src_sys_id}_{asset_id}_workflow.py"
         if os.path.exists(dag):
             os.remove(dag)

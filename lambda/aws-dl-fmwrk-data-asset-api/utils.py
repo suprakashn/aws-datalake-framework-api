@@ -191,3 +191,44 @@ def update_adv_dq(db, body, src_id, asset_id):
         table='adv_dq_rules',
         data=dq_rules
     )
+
+
+def create_delivery_stream(data_stream_name, src_sys_id, asset_id):
+    try:
+        my_session = boto3.session.Session()
+        my_region = my_session.region_name
+        config = getGlobalParams()
+        client_kinesis = boto3.client('kinesis', region_name=my_region)
+        client_firehose = boto3.client('firehose', region_name=my_region)
+        describe_response = client_kinesis.describe_stream(
+            StreamName=f'{data_stream_name}',
+            Limit=1, )
+        data_stream_arn = describe_response['StreamDescription']['StreamARN']
+        client_firehose.create_delivery_stream(
+            DeliveryStreamName=f'{config["fm_prefix"]}_{src_sys_id}_{asset_id}_delivery_stream',
+            DeliveryStreamType='KinesisStreamAsSource',
+            KinesisStreamSourceConfiguration={
+                'KinesisStreamARN': data_stream_arn,
+                'RoleARN': "arn:aws:iam::315119964270:role/dl-fmwrk-kinesis-role",
+            },
+            S3DestinationConfiguration={
+                'RoleARN': "arn:aws:iam::315119964270:role/dl-fmwrk-kinesis-role",
+                'BucketARN': f'arn:aws:s3:::{config["fm_prefix"]}-time-drvn-inbound-{my_region}',
+                'Prefix': f'init/{src_sys_id}/{asset_id}/' + '!{firehose:random-string}',
+                'ErrorOutputPrefix': f'init/{src_sys_id}/{asset_id}/' + '!{firehose:error-output-type}'})
+        print("Created delivery strea")
+    except Exception as e:
+        print(str(e))
+
+
+def delete_delivery_stream(src_sys_id, asset_id):
+    try:
+        my_session = boto3.session.Session()
+        my_region = my_session.region_name
+        config = getGlobalParams()
+        client_firehose = boto3.client('firehose', region_name=my_region)
+        response = client_firehose.delete_delivery_stream(
+            DeliveryStreamName=f'{config["fm_prefix"]}_{src_sys_id}_{asset_id}_delivery_stream'
+        )
+    except Exception as e:
+        print(str(e))
