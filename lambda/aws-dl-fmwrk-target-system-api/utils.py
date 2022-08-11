@@ -1,20 +1,33 @@
-import json
 import os
+import json
+from datetime import datetime
 from random import randrange
-from datetime import datetime, timezone
 
 import boto3
-from botocore.exceptions import ClientError
 
 
-def generate_src_sys_id(n):
-    return int(f"{randrange(1, 10 ** n):03}")
+def generate_target_sys_id(n):
+    """
+
+    :param n:
+    :return:
+    """
+    return int(f'{randrange(1, 10 ** n):03}')
 
 
 def insert_event_to_dynamoDb(
         event, context, api_call_type, status="success", op_type="insert"
 ):
-    cur_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    """
+
+    :param event:
+    :param context:
+    :param api_call_type:
+    :param status:
+    :param op_type:
+    :return:
+    """
+    cur_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     aws_request_id = context.aws_request_id
     log_group_name = context.log_group_name
     log_stream_name = context.log_stream_name
@@ -38,7 +51,7 @@ def insert_event_to_dynamoDb(
                 "payload": payload,
                 "api_call_type": api_call_type,
                 "modified ts": cur_time,
-                "status": status,
+                "response_status": status,
             }
         )
     else:
@@ -48,7 +61,7 @@ def insert_event_to_dynamoDb(
                 "method_name": method_name,
             },
             ConditionExpression="attribute_exists(aws_request_id)",
-            UpdateExpression="SET status = :val1",
+            UpdateExpression="SET response_status = :val1",
             ExpressionAttributeValues={
                 ":val1": status,
             },
@@ -73,49 +86,32 @@ def insert_event_to_dynamoDb(
     }
 
 
-def src_sys_present(db, global_config, src_sys_id):
+def rollback_target_sys(db, global_config, target_id, region):
+    """
+
+    :param db:
+    :param global_config:
+    :param target_id:
+    :param region:
+    :return:
+    """
     try:
-        table = global_config["src_sys_table"]
-        condition = ("src_sys_id = %s", [src_sys_id])
-        # Trying to get dynamoDB item with src_sys_id and bucket name as key
-        response = db.retrieve_dict(table, cols="src_sys_id", where=condition)
-        # If item with the specified src_sys_id is present,the response contains "Item" in it
-        if response:
-            # Returns True if src_sys_id is present
-            return True
-        else:
-            # Returns False if src_sys_id is absent
-            return False
+        db.rollback()
+        delete_target_sys_stack(global_config, target_id, region)
+        delete_rds_entry(db, global_config, target_id)
     except Exception as e:
         print(e)
 
 
-def is_associated_with_asset(db, src_sys_id):
-    try:
-        # Accessing data asset table
-        table = "data_asset"
-        condition = ("src_sys_id = %s", [src_sys_id])
-        # Trying to get dynamoDB item with src_sys_id and bucket name as key
-        response = db.retrieve_dict(table, cols="src_sys_id", where=condition)
-        if response:
-            return True
-        else:
-            return False
-    except Exception as e:
-        print(e)
+def delete_target_sys_stack(global_config, target_id, region):
+    """
 
-
-def delete_rds_entry(db, global_config, src_sys_id):
-    src_sys_id_int = int(src_sys_id)
-    src_table = global_config["src_sys_table"]
-    src_ingstn_table = global_config['ingestion_table']
-    condition = ("src_sys_id = %s", [src_sys_id_int])
-    db.delete(src_table, condition)
-    db.delete(src_ingstn_table, condition)
-
-
-def delete_src_sys_stack(global_config, src_sys_id, region):
-    stack_name = global_config["fm_prefix"] + "-" + str(src_sys_id) + "-" + region
+    :param global_config:
+    :param target_id:
+    :param region:
+    :return:
+    """
+    stack_name = global_config["fm_tgt_prefix"] + "-" + str(target_id) + "-" + region
     client = boto3.client("cloudformation", region_name=region)
     try:
         # Deletion of stack
@@ -124,9 +120,15 @@ def delete_src_sys_stack(global_config, src_sys_id, region):
         print(e)
 
 
-def rollback_src_sys(db, global_config, src_sys_id, region):
-    try:
-        delete_src_sys_stack(global_config, src_sys_id, region)
-        delete_rds_entry(db, global_config, src_sys_id)
-    except Exception as e:
-        print(e)
+def delete_rds_entry(db, global_config, tgt_id):
+    """
+
+    :param db:
+    :param global_config:
+    :param tgt_id:
+    :return:
+    """
+    target_id = int(tgt_id)
+    table = global_config['target_sys_table']
+    condition = ('target_id = %s', [target_id])
+    db.delete(table, condition)
