@@ -49,7 +49,9 @@ def read_asset(event, method, database):
         "src_sql_query",
         "ingstn_src_path",
         "trigger_mechanism",
-        "frequency"
+        "frequency",
+        "ext_method",
+        "ext_col"
     ]
     dq_columns = [
         'dq_rule'

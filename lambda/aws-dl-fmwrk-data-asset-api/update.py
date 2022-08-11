@@ -36,7 +36,9 @@ def parse_data_asset_attributes(asset_id, message_body):
             "req_tokenization": message_body["asset_attributes"][i]["req_tokenization"],
             "pk_ind": message_body["asset_attributes"][i]["pk_ind"],
             "null_ind": message_body["asset_attributes"][i]["null_ind"],
-            "data_type": message_body["asset_attributes"][i]["data_type"]
+            "data_type": message_body["asset_attributes"][i]["data_type"],
+            "datetime_format": None if "datetime_format" not in message_body["asset_attributes"][i].keys() else message_body["asset_attributes"][i]["datetime_format"],
+            "tgt_datetime_format": None if "tgt_datetime_format" not in message_body["asset_attributes"][i].keys() else message_body["asset_attributes"][i]["tgt_datetime_format"]
         }
         attribute["modified_ts"] = datetime.utcnow()
         attribute["asset_id"] = asset_id
@@ -44,10 +46,25 @@ def parse_data_asset_attributes(asset_id, message_body):
             attribute["tgt_col_nm"] = attribute["col_nm"]
         else:
             attribute["tgt_col_nm"] = message_body["asset_attributes"][i]["tgt_col_nm"]
+        if message_body["asset_attributes"][i]["req_tokenization"] == True:
+            attribute["tgt_data_type"] = "String"
         if message_body["asset_attributes"][i]["tgt_data_type"] == "None":
             attribute["tgt_data_type"] = attribute["data_type"]
         else:
             attribute["tgt_data_type"] = message_body["asset_attributes"][i]["tgt_data_type"]
+        if attribute["data_type"] == "Datetime":
+            if (attribute["datetime_format"] != None) and (attribute["tgt_datetime_format"] != None):
+                attribute["datetime_format"] = message_body["asset_attributes"][i]["datetime_format"]
+                attribute["tgt_datetime_format"] = message_body["asset_attributes"][i]["tgt_datetime_format"]
+            elif attribute["datetime_format"] != None:
+                attribute["datetime_format"] = message_body["asset_attributes"][i]["datetime_format"]
+                attribute["tgt_datetime_format"] = message_body["asset_attributes"][i]["datetime_format"]
+            else:
+                attribute["datetime_format"] = "yyyy-MM-dd HH:mm:ss"
+                attribute["tgt_datetime_format"] = "yyyy-MM-dd HH:mm:ss"
+        else:
+            attribute["datetime_format"] = None
+            attribute["tgt_datetime_format"] = None
 
         data_asset_attributes.append(attribute)
 
