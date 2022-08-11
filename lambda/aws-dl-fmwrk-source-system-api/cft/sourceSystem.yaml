@@ -2,16 +2,13 @@ AWSTemplateFormatVersion: 2010-09-09
 Parameters:
   CurrentRegion:
     Type: String
-    Default: us-east-1
+    Default: us-east-2
   DlFmwrkPrefix:
     Type: String
     Default: dl-fmwrk
   AwsAccount:
     Type: String
-    Default: "076931226898"
-  DlFmwrkSrcInfoLambdaName:
-    Type: String
-    Default: dlFmwrkSrcDataInfo
+    Default: "315119964270"
   srcSysId:
     Type: Number
     Default: 99999999
@@ -19,33 +16,9 @@ Parameters:
 Resources:
   SourceSystemS3Bucket:
     Type: AWS::S3::Bucket
-    Properties: 
-      BucketEncryption: 
+    Properties:
+      BucketEncryption:
         ServerSideEncryptionConfiguration:
         - ServerSideEncryptionByDefault:
             SSEAlgorithm: AES256
       BucketName: !Join ["", [!Ref DlFmwrkPrefix, "-", !Ref srcSysId, "-", !Ref CurrentRegion]]
-
-  SNSPolicy:
-    Type: AWS::SNS::TopicPolicy
-    DependsOn: SourceSystemSNS
-    Properties:
-      PolicyDocument:
-        Id: dlFmwrkTopicId
-        Statement:
-        - Sid: SNS Topic Policy for createObject event in S3
-          Effect: Allow
-          Principal:
-            Service: s3.amazonaws.com
-          Action: sns:Publish
-          Resource: "*"
-      Topics:
-      - !Ref SourceSystemSNS
-
-  LambdaInvokePermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      Action: lambda:InvokeFunction
-      Principal: sns.amazonaws.com
-      SourceArn:  !Ref SourceSystemSNS
-      FunctionName: !Join ["", ["arn:aws:lambda:", !Ref CurrentRegion, ":", !Ref AwsAccount, ":function:", !Ref DlFmwrkSrcInfoLambdaName]]

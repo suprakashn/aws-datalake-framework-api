@@ -12,6 +12,12 @@ def delete_rds_entry(db, global_config, src_sys_id):
     db.delete(src_ingstn_table, condition)
 
 
+def empty_bucket(bucket_name):
+    s3 = boto3.resource('s3')
+    bucket = s3.Bucket(bucket_name)
+    bucket.objects.all().delete()
+
+
 def delete_src_sys_stack(global_config, src_sys_id, region):
     stack_name = global_config["fm_prefix"] + "-" + str(src_sys_id) + "-" + region
     client = boto3.client("cloudformation", region_name=region)
@@ -25,14 +31,18 @@ def delete_src_sys_stack(global_config, src_sys_id, region):
 def delete_source_system(method, db, global_config, message_body, region):
     src_config = message_body["src_config"]
     src_sys_id = int(src_config["src_sys_id"])
+    src_bucket = f"{global_config['fm_prefix']}-{src_sys_id}-{region}"
     if src_sys_present(db, global_config, src_sys_id):
         associated = is_associated_with_asset(db, src_sys_id)
         # If it is not associated,source system stack will be deleted
         if not associated:
             try:
-                delete_rds_entry(db, global_config, src_sys_id)
+                # empty the bucket
+                empty_bucket(src_bucket)
                 # delete the stack
                 delete_src_sys_stack(global_config, src_sys_id, region)
+                # delete the entry in the RDS
+                delete_rds_entry(db, global_config, src_sys_id)
                 response = Response(
                     method, status=True, body=None, payload=message_body,
                     message="Successfully Deleted the Source System"

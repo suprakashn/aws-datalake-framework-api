@@ -54,8 +54,6 @@ def update_source_system(method, db, message_body, global_config):
     src_config = message_body["src_config"]
     ingestion_config = message_body["ingestion_config"]
     src_sys_id = src_config['src_sys_id']
-    src_sys_table = global_config["src_sys_table"]
-    ingestion_table = global_config["ingestion_table"]
     src_exists, src_msg = update_src(db, src_config, global_config)
     ing_exists, ing_msg = update_ing(
         db, ingestion_config, global_config
@@ -63,12 +61,12 @@ def update_source_system(method, db, message_body, global_config):
     message = src_msg + ' ' + ing_msg
     if src_exists:
         sql = f"""
-            SELECT * from {src_sys_table} A join {ingestion_table} B 
+            SELECT * from source_system A join source_system_ingstn_atrbts B 
             ON A.src_sys_id = B.src_sys_id
             WHERE A.src_sys_id = {src_sys_id}
             """
         source_system_details = db.execute(sql, return_type='dict')[0]
-        source_system_details.pop("modified_ts")
+        source_system_details.pop("modified_ts", None)
         response = Response(
             method, status=True, body=source_system_details,
             payload=message_body, message=message

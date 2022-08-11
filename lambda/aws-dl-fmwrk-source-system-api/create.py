@@ -108,6 +108,7 @@ def store_ingestion_attributes(
 ):
     ingestion_data["src_sys_id"] = src_sys_id
     ingestion_data["ingstn_src_bckt_nm"] = bucket_name
+    ingestion_data["modified_ts"] = str(datetime.utcnow())
     if "db_pass" in ingestion_data:
         db_secret = ingestion_data["db_pass"]
         ingestion_data.pop("db_pass", None)
