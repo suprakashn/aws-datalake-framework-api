@@ -120,12 +120,12 @@ def parse_data_asset_attributes(asset_id, message_body):
             attribute["tgt_col_nm"] = attribute["col_nm"]
         else:
             attribute["tgt_col_nm"] = message_body["asset_attributes"][i]["tgt_col_nm"]
-        if message_body["asset_attributes"][i]["req_tokenization"] == True:
-            attribute["tgt_data_type"] = "String"
         if message_body["asset_attributes"][i]["tgt_data_type"] == "None":
             attribute["tgt_data_type"] = attribute["data_type"]
         else:
             attribute["tgt_data_type"] = message_body["asset_attributes"][i]["tgt_data_type"]
+        if message_body["asset_attributes"][i]["req_tokenization"] == True:
+            attribute["tgt_data_type"] = "String"
         if attribute["data_type"] == "Datetime":
             if (attribute["datetime_format"] != None) and (attribute["tgt_datetime_format"] != None):
                 attribute["datetime_format"] = message_body["asset_attributes"][i]["datetime_format"]
