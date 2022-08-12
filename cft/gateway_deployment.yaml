@@ -1,0 +1,1067 @@
+AWSTemplateFormatVersion: "2010-09-09"
+# Parameters
+Parameters:
+  apiGatewayName:
+    Type: String
+    Default: aws-dl-fmwrk-api
+  Environment:
+    Type: String
+    Default: dev
+  apiGatewayHTTPMethod:
+    Type: String
+    Default: POST
+  SourceSystem:
+    Type: String
+    Default: aws-dl-fmwrk-source-system-api
+  TargetSystem:
+    Type: String
+    Default: aws-dl-fmwrk-target-system-api
+  DataAsset:
+    Type: String
+    Default: aws-dl-fmwrk-data-asset-api
+
+# Deploy API GATEWAY
+Resources:
+  apiGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Description: Testing the deployment of the API Gateway
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+      Name: !Ref apiGatewayName
+
+  #----- source_system resources & method -----#
+  SourceSystemResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      RestApiId: !Ref apiGateway
+      ParentId: !GetAtt apiGateway.RootResourceId
+      PathPart: source_system
+
+  SourceSystemCreateResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      RestApiId: !Ref apiGateway
+      ParentId: !Ref SourceSystemResource
+      PathPart: create
+
+  SourceSystemCreateMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: !Ref apiGatewayHTTPMethod
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS
+        PassthroughBehavior: WHEN_NO_TEMPLATES
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations
+          - lambdaArn: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${SourceSystem}-${Environment}
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        RequestTemplates:
+          application/json: !Join
+            - ""
+            - - |
+                ##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
+                ##  This template will pass through all parameters including path, querystring, header, stage variables, and context through to the integration endpoint via the body/payload
+                #set($allParams = $input.params())
+                {
+                "body-json" : $input.json('$'),
+                "params" : {
+                #foreach($type in $allParams.keySet())
+                    #set($params = $allParams.get($type))
+                "$type" : {
+                    #foreach($paramName in $params.keySet())
+                    "$paramName" : "$util.escapeJavaScript($params.get($paramName))"
+                        #if($foreach.hasNext),#end
+                    #end
+                }
+                    #if($foreach.hasNext),#end
+                #end
+                },
+                "stage-variables" : {
+                #foreach($key in $stageVariables.keySet())
+                "$key" : "$util.escapeJavaScript($stageVariables.get($key))"
+                    #if($foreach.hasNext),#end
+                #end
+                },
+                "context" : {
+                    "account-id" : "$context.identity.accountId",
+                    "api-id" : "$context.apiId",
+                    "api-key" : "$context.identity.apiKey",
+                    "authorizer-principal-id" : "$context.authorizer.principalId",
+                    "caller" : "$context.identity.caller",
+                    "cognito-authentication-provider" : "$context.identity.cognitoAuthenticationProvider",
+                    "cognito-authentication-type" : "$context.identity.cognitoAuthenticationType",
+                    "cognito-identity-id" : "$context.identity.cognitoIdentityId",
+                    "cognito-identity-pool-id" : "$context.identity.cognitoIdentityPoolId",
+                    "http-method" : "$context.httpMethod",
+                    "stage" : "$context.stage",
+                    "source-ip" : "$context.identity.sourceIp",
+                    "user" : "$context.identity.user",
+                    "user-agent" : "$context.identity.userAgent",
+                    "user-arn" : "$context.identity.userArn",
+                    "request-id" : "$context.requestId",
+                    "resource-id" : "$context.resourceId",
+                    "resource-path" : "$context.resourcePath"
+                    }
+                }
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: true
+          ResponseModels:
+            application/json: "Empty"
+      ResourceId: !Ref SourceSystemCreateResource
+      RestApiId: !Ref apiGateway
+
+  SourceSystemReadResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      RestApiId: !Ref apiGateway
+      ParentId: !Ref SourceSystemResource
+      PathPart: read
+
+  SourceSystemReadMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: !Ref apiGatewayHTTPMethod
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS
+        PassthroughBehavior: WHEN_NO_TEMPLATES
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations
+          - lambdaArn: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${SourceSystem}-${Environment}
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        RequestTemplates:
+          application/json: !Join
+            - ""
+            - - |
+                ##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
+                ##  This template will pass through all parameters including path, querystring, header, stage variables, and context through to the integration endpoint via the body/payload
+                #set($allParams = $input.params())
+                {
+                "body-json" : $input.json('$'),
+                "params" : {
+                #foreach($type in $allParams.keySet())
+                    #set($params = $allParams.get($type))
+                "$type" : {
+                    #foreach($paramName in $params.keySet())
+                    "$paramName" : "$util.escapeJavaScript($params.get($paramName))"
+                        #if($foreach.hasNext),#end
+                    #end
+                }
+                    #if($foreach.hasNext),#end
+                #end
+                },
+                "stage-variables" : {
+                #foreach($key in $stageVariables.keySet())
+                "$key" : "$util.escapeJavaScript($stageVariables.get($key))"
+                    #if($foreach.hasNext),#end
+                #end
+                },
+                "context" : {
+                    "account-id" : "$context.identity.accountId",
+                    "api-id" : "$context.apiId",
+                    "api-key" : "$context.identity.apiKey",
+                    "authorizer-principal-id" : "$context.authorizer.principalId",
+                    "caller" : "$context.identity.caller",
+                    "cognito-authentication-provider" : "$context.identity.cognitoAuthenticationProvider",
+                    "cognito-authentication-type" : "$context.identity.cognitoAuthenticationType",
+                    "cognito-identity-id" : "$context.identity.cognitoIdentityId",
+                    "cognito-identity-pool-id" : "$context.identity.cognitoIdentityPoolId",
+                    "http-method" : "$context.httpMethod",
+                    "stage" : "$context.stage",
+                    "source-ip" : "$context.identity.sourceIp",
+                    "user" : "$context.identity.user",
+                    "user-agent" : "$context.identity.userAgent",
+                    "user-arn" : "$context.identity.userArn",
+                    "request-id" : "$context.requestId",
+                    "resource-id" : "$context.resourceId",
+                    "resource-path" : "$context.resourcePath"
+                    }
+                }
+
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: true
+          ResponseModels:
+            application/json: "Empty"
+      ResourceId: !Ref SourceSystemReadResource
+      RestApiId: !Ref apiGateway
+
+  SourceSystemUpdateResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      RestApiId: !Ref apiGateway
+      ParentId: !Ref SourceSystemResource
+      PathPart: update
+
+  SourceSystemUpdateMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: !Ref apiGatewayHTTPMethod
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS
+        PassthroughBehavior: WHEN_NO_TEMPLATES
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations
+          - lambdaArn: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${SourceSystem}-${Environment}
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        RequestTemplates:
+          application/json: !Join
+            - ""
+            - - |
+                ##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
+                ##  This template will pass through all parameters including path, querystring, header, stage variables, and context through to the integration endpoint via the body/payload
+                #set($allParams = $input.params())
+                {
+                "body-json" : $input.json('$'),
+                "params" : {
+                #foreach($type in $allParams.keySet())
+                    #set($params = $allParams.get($type))
+                "$type" : {
+                    #foreach($paramName in $params.keySet())
+                    "$paramName" : "$util.escapeJavaScript($params.get($paramName))"
+                        #if($foreach.hasNext),#end
+                    #end
+                }
+                    #if($foreach.hasNext),#end
+                #end
+                },
+                "stage-variables" : {
+                #foreach($key in $stageVariables.keySet())
+                "$key" : "$util.escapeJavaScript($stageVariables.get($key))"
+                    #if($foreach.hasNext),#end
+                #end
+                },
+                "context" : {
+                    "account-id" : "$context.identity.accountId",
+                    "api-id" : "$context.apiId",
+                    "api-key" : "$context.identity.apiKey",
+                    "authorizer-principal-id" : "$context.authorizer.principalId",
+                    "caller" : "$context.identity.caller",
+                    "cognito-authentication-provider" : "$context.identity.cognitoAuthenticationProvider",
+                    "cognito-authentication-type" : "$context.identity.cognitoAuthenticationType",
+                    "cognito-identity-id" : "$context.identity.cognitoIdentityId",
+                    "cognito-identity-pool-id" : "$context.identity.cognitoIdentityPoolId",
+                    "http-method" : "$context.httpMethod",
+                    "stage" : "$context.stage",
+                    "source-ip" : "$context.identity.sourceIp",
+                    "user" : "$context.identity.user",
+                    "user-agent" : "$context.identity.userAgent",
+                    "user-arn" : "$context.identity.userArn",
+                    "request-id" : "$context.requestId",
+                    "resource-id" : "$context.resourceId",
+                    "resource-path" : "$context.resourcePath"
+                    }
+                }
+
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: true
+          ResponseModels:
+            application/json: "Empty"
+      ResourceId: !Ref SourceSystemUpdateResource
+      RestApiId: !Ref apiGateway
+
+  SourceSystemDeleteResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      RestApiId: !Ref apiGateway
+      ParentId: !Ref SourceSystemResource
+      PathPart: delete
+
+  SourceSystemDeleteMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: !Ref apiGatewayHTTPMethod
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS
+        PassthroughBehavior: WHEN_NO_TEMPLATES
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations
+          - lambdaArn: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${SourceSystem}-${Environment}
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        RequestTemplates:
+          application/json: !Join
+            - ""
+            - - |
+                ##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
+                ##  This template will pass through all parameters including path, querystring, header, stage variables, and context through to the integration endpoint via the body/payload
+                #set($allParams = $input.params())
+                {
+                "body-json" : $input.json('$'),
+                "params" : {
+                #foreach($type in $allParams.keySet())
+                    #set($params = $allParams.get($type))
+                "$type" : {
+                    #foreach($paramName in $params.keySet())
+                    "$paramName" : "$util.escapeJavaScript($params.get($paramName))"
+                        #if($foreach.hasNext),#end
+                    #end
+                }
+                    #if($foreach.hasNext),#end
+                #end
+                },
+                "stage-variables" : {
+                #foreach($key in $stageVariables.keySet())
+                "$key" : "$util.escapeJavaScript($stageVariables.get($key))"
+                    #if($foreach.hasNext),#end
+                #end
+                },
+                "context" : {
+                    "account-id" : "$context.identity.accountId",
+                    "api-id" : "$context.apiId",
+                    "api-key" : "$context.identity.apiKey",
+                    "authorizer-principal-id" : "$context.authorizer.principalId",
+                    "caller" : "$context.identity.caller",
+                    "cognito-authentication-provider" : "$context.identity.cognitoAuthenticationProvider",
+                    "cognito-authentication-type" : "$context.identity.cognitoAuthenticationType",
+                    "cognito-identity-id" : "$context.identity.cognitoIdentityId",
+                    "cognito-identity-pool-id" : "$context.identity.cognitoIdentityPoolId",
+                    "http-method" : "$context.httpMethod",
+                    "stage" : "$context.stage",
+                    "source-ip" : "$context.identity.sourceIp",
+                    "user" : "$context.identity.user",
+                    "user-agent" : "$context.identity.userAgent",
+                    "user-arn" : "$context.identity.userArn",
+                    "request-id" : "$context.requestId",
+                    "resource-id" : "$context.resourceId",
+                    "resource-path" : "$context.resourcePath"
+                    }
+                }
+
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: true
+          ResponseModels:
+            application/json: "Empty"
+      ResourceId: !Ref SourceSystemDeleteResource
+      RestApiId: !Ref apiGateway
+  #----- source_system END -----#
+
+  #----- target_system resources & method -----#
+  TargetSystemResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      RestApiId: !Ref apiGateway
+      ParentId: !GetAtt apiGateway.RootResourceId
+      PathPart: target_system
+
+  TargetSystemCreateResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      RestApiId: !Ref apiGateway
+      ParentId: !Ref TargetSystemResource
+      PathPart: create
+
+  TargetSystemCreateMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: !Ref apiGatewayHTTPMethod
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS
+        PassthroughBehavior: WHEN_NO_TEMPLATES
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations
+          - lambdaArn: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${TargetSystem}-${Environment}
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        RequestTemplates:
+          application/json: !Join
+            - ""
+            - - |
+                ##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
+                ##  This template will pass through all parameters including path, querystring, header, stage variables, and context through to the integration endpoint via the body/payload
+                #set($allParams = $input.params())
+                {
+                "body-json" : $input.json('$'),
+                "params" : {
+                #foreach($type in $allParams.keySet())
+                    #set($params = $allParams.get($type))
+                "$type" : {
+                    #foreach($paramName in $params.keySet())
+                    "$paramName" : "$util.escapeJavaScript($params.get($paramName))"
+                        #if($foreach.hasNext),#end
+                    #end
+                }
+                    #if($foreach.hasNext),#end
+                #end
+                },
+                "stage-variables" : {
+                #foreach($key in $stageVariables.keySet())
+                "$key" : "$util.escapeJavaScript($stageVariables.get($key))"
+                    #if($foreach.hasNext),#end
+                #end
+                },
+                "context" : {
+                    "account-id" : "$context.identity.accountId",
+                    "api-id" : "$context.apiId",
+                    "api-key" : "$context.identity.apiKey",
+                    "authorizer-principal-id" : "$context.authorizer.principalId",
+                    "caller" : "$context.identity.caller",
+                    "cognito-authentication-provider" : "$context.identity.cognitoAuthenticationProvider",
+                    "cognito-authentication-type" : "$context.identity.cognitoAuthenticationType",
+                    "cognito-identity-id" : "$context.identity.cognitoIdentityId",
+                    "cognito-identity-pool-id" : "$context.identity.cognitoIdentityPoolId",
+                    "http-method" : "$context.httpMethod",
+                    "stage" : "$context.stage",
+                    "source-ip" : "$context.identity.sourceIp",
+                    "user" : "$context.identity.user",
+                    "user-agent" : "$context.identity.userAgent",
+                    "user-arn" : "$context.identity.userArn",
+                    "request-id" : "$context.requestId",
+                    "resource-id" : "$context.resourceId",
+                    "resource-path" : "$context.resourcePath"
+                    }
+                }
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: true
+          ResponseModels:
+            application/json: "Empty"
+      ResourceId: !Ref TargetSystemCreateResource
+      RestApiId: !Ref apiGateway
+
+  TargetSystemReadResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      RestApiId: !Ref apiGateway
+      ParentId: !Ref TargetSystemResource
+      PathPart: read
+
+  TargetSystemReadMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: !Ref apiGatewayHTTPMethod
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS
+        PassthroughBehavior: WHEN_NO_TEMPLATES
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations
+          - lambdaArn: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${TargetSystem}-${Environment}
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        RequestTemplates:
+          application/json: !Join
+            - ""
+            - - |
+                ##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
+                ##  This template will pass through all parameters including path, querystring, header, stage variables, and context through to the integration endpoint via the body/payload
+                #set($allParams = $input.params())
+                {
+                "body-json" : $input.json('$'),
+                "params" : {
+                #foreach($type in $allParams.keySet())
+                    #set($params = $allParams.get($type))
+                "$type" : {
+                    #foreach($paramName in $params.keySet())
+                    "$paramName" : "$util.escapeJavaScript($params.get($paramName))"
+                        #if($foreach.hasNext),#end
+                    #end
+                }
+                    #if($foreach.hasNext),#end
+                #end
+                },
+                "stage-variables" : {
+                #foreach($key in $stageVariables.keySet())
+                "$key" : "$util.escapeJavaScript($stageVariables.get($key))"
+                    #if($foreach.hasNext),#end
+                #end
+                },
+                "context" : {
+                    "account-id" : "$context.identity.accountId",
+                    "api-id" : "$context.apiId",
+                    "api-key" : "$context.identity.apiKey",
+                    "authorizer-principal-id" : "$context.authorizer.principalId",
+                    "caller" : "$context.identity.caller",
+                    "cognito-authentication-provider" : "$context.identity.cognitoAuthenticationProvider",
+                    "cognito-authentication-type" : "$context.identity.cognitoAuthenticationType",
+                    "cognito-identity-id" : "$context.identity.cognitoIdentityId",
+                    "cognito-identity-pool-id" : "$context.identity.cognitoIdentityPoolId",
+                    "http-method" : "$context.httpMethod",
+                    "stage" : "$context.stage",
+                    "source-ip" : "$context.identity.sourceIp",
+                    "user" : "$context.identity.user",
+                    "user-agent" : "$context.identity.userAgent",
+                    "user-arn" : "$context.identity.userArn",
+                    "request-id" : "$context.requestId",
+                    "resource-id" : "$context.resourceId",
+                    "resource-path" : "$context.resourcePath"
+                    }
+                }
+
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: true
+          ResponseModels:
+            application/json: "Empty"
+      ResourceId: !Ref TargetSystemReadResource
+      RestApiId: !Ref apiGateway
+
+  TargetSystemUpdateResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      RestApiId: !Ref apiGateway
+      ParentId: !Ref TargetSystemResource
+      PathPart: update
+
+  TargetSystemUpdateMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: !Ref apiGatewayHTTPMethod
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS
+        PassthroughBehavior: WHEN_NO_TEMPLATES
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations
+          - lambdaArn: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${TargetSystem}-${Environment}
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        RequestTemplates:
+          application/json: !Join
+            - ""
+            - - |
+                ##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
+                ##  This template will pass through all parameters including path, querystring, header, stage variables, and context through to the integration endpoint via the body/payload
+                #set($allParams = $input.params())
+                {
+                "body-json" : $input.json('$'),
+                "params" : {
+                #foreach($type in $allParams.keySet())
+                    #set($params = $allParams.get($type))
+                "$type" : {
+                    #foreach($paramName in $params.keySet())
+                    "$paramName" : "$util.escapeJavaScript($params.get($paramName))"
+                        #if($foreach.hasNext),#end
+                    #end
+                }
+                    #if($foreach.hasNext),#end
+                #end
+                },
+                "stage-variables" : {
+                #foreach($key in $stageVariables.keySet())
+                "$key" : "$util.escapeJavaScript($stageVariables.get($key))"
+                    #if($foreach.hasNext),#end
+                #end
+                },
+                "context" : {
+                    "account-id" : "$context.identity.accountId",
+                    "api-id" : "$context.apiId",
+                    "api-key" : "$context.identity.apiKey",
+                    "authorizer-principal-id" : "$context.authorizer.principalId",
+                    "caller" : "$context.identity.caller",
+                    "cognito-authentication-provider" : "$context.identity.cognitoAuthenticationProvider",
+                    "cognito-authentication-type" : "$context.identity.cognitoAuthenticationType",
+                    "cognito-identity-id" : "$context.identity.cognitoIdentityId",
+                    "cognito-identity-pool-id" : "$context.identity.cognitoIdentityPoolId",
+                    "http-method" : "$context.httpMethod",
+                    "stage" : "$context.stage",
+                    "source-ip" : "$context.identity.sourceIp",
+                    "user" : "$context.identity.user",
+                    "user-agent" : "$context.identity.userAgent",
+                    "user-arn" : "$context.identity.userArn",
+                    "request-id" : "$context.requestId",
+                    "resource-id" : "$context.resourceId",
+                    "resource-path" : "$context.resourcePath"
+                    }
+                }
+
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: true
+          ResponseModels:
+            application/json: "Empty"
+      ResourceId: !Ref TargetSystemUpdateResource
+      RestApiId: !Ref apiGateway
+
+  TargetSystemDeleteResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      RestApiId: !Ref apiGateway
+      ParentId: !Ref TargetSystemResource
+      PathPart: delete
+
+  TargetSystemDeleteMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: !Ref apiGatewayHTTPMethod
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS
+        PassthroughBehavior: WHEN_NO_TEMPLATES
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations
+          - lambdaArn: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${TargetSystem}-${Environment}
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        RequestTemplates:
+          application/json: !Join
+            - ""
+            - - |
+                ##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
+                ##  This template will pass through all parameters including path, querystring, header, stage variables, and context through to the integration endpoint via the body/payload
+                #set($allParams = $input.params())
+                {
+                "body-json" : $input.json('$'),
+                "params" : {
+                #foreach($type in $allParams.keySet())
+                    #set($params = $allParams.get($type))
+                "$type" : {
+                    #foreach($paramName in $params.keySet())
+                    "$paramName" : "$util.escapeJavaScript($params.get($paramName))"
+                        #if($foreach.hasNext),#end
+                    #end
+                }
+                    #if($foreach.hasNext),#end
+                #end
+                },
+                "stage-variables" : {
+                #foreach($key in $stageVariables.keySet())
+                "$key" : "$util.escapeJavaScript($stageVariables.get($key))"
+                    #if($foreach.hasNext),#end
+                #end
+                },
+                "context" : {
+                    "account-id" : "$context.identity.accountId",
+                    "api-id" : "$context.apiId",
+                    "api-key" : "$context.identity.apiKey",
+                    "authorizer-principal-id" : "$context.authorizer.principalId",
+                    "caller" : "$context.identity.caller",
+                    "cognito-authentication-provider" : "$context.identity.cognitoAuthenticationProvider",
+                    "cognito-authentication-type" : "$context.identity.cognitoAuthenticationType",
+                    "cognito-identity-id" : "$context.identity.cognitoIdentityId",
+                    "cognito-identity-pool-id" : "$context.identity.cognitoIdentityPoolId",
+                    "http-method" : "$context.httpMethod",
+                    "stage" : "$context.stage",
+                    "source-ip" : "$context.identity.sourceIp",
+                    "user" : "$context.identity.user",
+                    "user-agent" : "$context.identity.userAgent",
+                    "user-arn" : "$context.identity.userArn",
+                    "request-id" : "$context.requestId",
+                    "resource-id" : "$context.resourceId",
+                    "resource-path" : "$context.resourcePath"
+                    }
+                }
+
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: true
+          ResponseModels:
+            application/json: "Empty"
+      ResourceId: !Ref TargetSystemDeleteResource
+      RestApiId: !Ref apiGateway
+  #----- target_system END -----#
+
+  #----- data_asset resources & method -----#
+  DataAssetResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      RestApiId: !Ref apiGateway
+      ParentId: !GetAtt apiGateway.RootResourceId
+      PathPart: data_asset
+
+  DataAssetCreateResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      RestApiId: !Ref apiGateway
+      ParentId: !Ref DataAssetResource
+      PathPart: create
+
+  DataAssetCreateMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: !Ref apiGatewayHTTPMethod
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS
+        PassthroughBehavior: WHEN_NO_TEMPLATES
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations
+          - lambdaArn: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DataAsset}-${Environment}
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        RequestTemplates:
+          application/json: !Join
+            - ""
+            - - |
+                ##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
+                ##  This template will pass through all parameters including path, querystring, header, stage variables, and context through to the integration endpoint via the body/payload
+                #set($allParams = $input.params())
+                {
+                "body-json" : $input.json('$'),
+                "params" : {
+                #foreach($type in $allParams.keySet())
+                    #set($params = $allParams.get($type))
+                "$type" : {
+                    #foreach($paramName in $params.keySet())
+                    "$paramName" : "$util.escapeJavaScript($params.get($paramName))"
+                        #if($foreach.hasNext),#end
+                    #end
+                }
+                    #if($foreach.hasNext),#end
+                #end
+                },
+                "stage-variables" : {
+                #foreach($key in $stageVariables.keySet())
+                "$key" : "$util.escapeJavaScript($stageVariables.get($key))"
+                    #if($foreach.hasNext),#end
+                #end
+                },
+                "context" : {
+                    "account-id" : "$context.identity.accountId",
+                    "api-id" : "$context.apiId",
+                    "api-key" : "$context.identity.apiKey",
+                    "authorizer-principal-id" : "$context.authorizer.principalId",
+                    "caller" : "$context.identity.caller",
+                    "cognito-authentication-provider" : "$context.identity.cognitoAuthenticationProvider",
+                    "cognito-authentication-type" : "$context.identity.cognitoAuthenticationType",
+                    "cognito-identity-id" : "$context.identity.cognitoIdentityId",
+                    "cognito-identity-pool-id" : "$context.identity.cognitoIdentityPoolId",
+                    "http-method" : "$context.httpMethod",
+                    "stage" : "$context.stage",
+                    "source-ip" : "$context.identity.sourceIp",
+                    "user" : "$context.identity.user",
+                    "user-agent" : "$context.identity.userAgent",
+                    "user-arn" : "$context.identity.userArn",
+                    "request-id" : "$context.requestId",
+                    "resource-id" : "$context.resourceId",
+                    "resource-path" : "$context.resourcePath"
+                    }
+                }
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: true
+          ResponseModels:
+            application/json: "Empty"
+      ResourceId: !Ref DataAssetCreateResource
+      RestApiId: !Ref apiGateway
+
+  DataAssetReadResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      RestApiId: !Ref apiGateway
+      ParentId: !Ref DataAssetResource
+      PathPart: read
+
+  DataAssetReadMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: !Ref apiGatewayHTTPMethod
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS
+        PassthroughBehavior: WHEN_NO_TEMPLATES
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations
+          - lambdaArn: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DataAsset}-${Environment}
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        RequestTemplates:
+          application/json: !Join
+            - ""
+            - - |
+                ##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
+                ##  This template will pass through all parameters including path, querystring, header, stage variables, and context through to the integration endpoint via the body/payload
+                #set($allParams = $input.params())
+                {
+                "body-json" : $input.json('$'),
+                "params" : {
+                #foreach($type in $allParams.keySet())
+                    #set($params = $allParams.get($type))
+                "$type" : {
+                    #foreach($paramName in $params.keySet())
+                    "$paramName" : "$util.escapeJavaScript($params.get($paramName))"
+                        #if($foreach.hasNext),#end
+                    #end
+                }
+                    #if($foreach.hasNext),#end
+                #end
+                },
+                "stage-variables" : {
+                #foreach($key in $stageVariables.keySet())
+                "$key" : "$util.escapeJavaScript($stageVariables.get($key))"
+                    #if($foreach.hasNext),#end
+                #end
+                },
+                "context" : {
+                    "account-id" : "$context.identity.accountId",
+                    "api-id" : "$context.apiId",
+                    "api-key" : "$context.identity.apiKey",
+                    "authorizer-principal-id" : "$context.authorizer.principalId",
+                    "caller" : "$context.identity.caller",
+                    "cognito-authentication-provider" : "$context.identity.cognitoAuthenticationProvider",
+                    "cognito-authentication-type" : "$context.identity.cognitoAuthenticationType",
+                    "cognito-identity-id" : "$context.identity.cognitoIdentityId",
+                    "cognito-identity-pool-id" : "$context.identity.cognitoIdentityPoolId",
+                    "http-method" : "$context.httpMethod",
+                    "stage" : "$context.stage",
+                    "source-ip" : "$context.identity.sourceIp",
+                    "user" : "$context.identity.user",
+                    "user-agent" : "$context.identity.userAgent",
+                    "user-arn" : "$context.identity.userArn",
+                    "request-id" : "$context.requestId",
+                    "resource-id" : "$context.resourceId",
+                    "resource-path" : "$context.resourcePath"
+                    }
+                }
+
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: true
+          ResponseModels:
+            application/json: "Empty"
+      ResourceId: !Ref DataAssetReadResource
+      RestApiId: !Ref apiGateway
+
+  DataAssetUpdateResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      RestApiId: !Ref apiGateway
+      ParentId: !Ref DataAssetResource
+      PathPart: update
+
+  DataAssetUpdateMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: !Ref apiGatewayHTTPMethod
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS
+        PassthroughBehavior: WHEN_NO_TEMPLATES
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations
+          - lambdaArn: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DataAsset}-${Environment}
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        RequestTemplates:
+          application/json: !Join
+            - ""
+            - - |
+                ##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
+                ##  This template will pass through all parameters including path, querystring, header, stage variables, and context through to the integration endpoint via the body/payload
+                #set($allParams = $input.params())
+                {
+                "body-json" : $input.json('$'),
+                "params" : {
+                #foreach($type in $allParams.keySet())
+                    #set($params = $allParams.get($type))
+                "$type" : {
+                    #foreach($paramName in $params.keySet())
+                    "$paramName" : "$util.escapeJavaScript($params.get($paramName))"
+                        #if($foreach.hasNext),#end
+                    #end
+                }
+                    #if($foreach.hasNext),#end
+                #end
+                },
+                "stage-variables" : {
+                #foreach($key in $stageVariables.keySet())
+                "$key" : "$util.escapeJavaScript($stageVariables.get($key))"
+                    #if($foreach.hasNext),#end
+                #end
+                },
+                "context" : {
+                    "account-id" : "$context.identity.accountId",
+                    "api-id" : "$context.apiId",
+                    "api-key" : "$context.identity.apiKey",
+                    "authorizer-principal-id" : "$context.authorizer.principalId",
+                    "caller" : "$context.identity.caller",
+                    "cognito-authentication-provider" : "$context.identity.cognitoAuthenticationProvider",
+                    "cognito-authentication-type" : "$context.identity.cognitoAuthenticationType",
+                    "cognito-identity-id" : "$context.identity.cognitoIdentityId",
+                    "cognito-identity-pool-id" : "$context.identity.cognitoIdentityPoolId",
+                    "http-method" : "$context.httpMethod",
+                    "stage" : "$context.stage",
+                    "source-ip" : "$context.identity.sourceIp",
+                    "user" : "$context.identity.user",
+                    "user-agent" : "$context.identity.userAgent",
+                    "user-arn" : "$context.identity.userArn",
+                    "request-id" : "$context.requestId",
+                    "resource-id" : "$context.resourceId",
+                    "resource-path" : "$context.resourcePath"
+                    }
+                }
+
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: true
+          ResponseModels:
+            application/json: "Empty"
+      ResourceId: !Ref DataAssetUpdateResource
+      RestApiId: !Ref apiGateway
+
+  DataAssetDeleteResource:
+    Type: "AWS::ApiGateway::Resource"
+    Properties:
+      RestApiId: !Ref apiGateway
+      ParentId: !Ref DataAssetResource
+      PathPart: delete
+
+  DataAssetDeleteMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: !Ref apiGatewayHTTPMethod
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS
+        PassthroughBehavior: WHEN_NO_TEMPLATES
+        Uri: !Sub
+          - arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${lambdaArn}/invocations
+          - lambdaArn: !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DataAsset}-${Environment}
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+        RequestTemplates:
+          application/json: !Join
+            - ""
+            - - |
+                ##  See http://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
+                ##  This template will pass through all parameters including path, querystring, header, stage variables, and context through to the integration endpoint via the body/payload
+                #set($allParams = $input.params())
+                {
+                "body-json" : $input.json('$'),
+                "params" : {
+                #foreach($type in $allParams.keySet())
+                    #set($params = $allParams.get($type))
+                "$type" : {
+                    #foreach($paramName in $params.keySet())
+                    "$paramName" : "$util.escapeJavaScript($params.get($paramName))"
+                        #if($foreach.hasNext),#end
+                    #end
+                }
+                    #if($foreach.hasNext),#end
+                #end
+                },
+                "stage-variables" : {
+                #foreach($key in $stageVariables.keySet())
+                "$key" : "$util.escapeJavaScript($stageVariables.get($key))"
+                    #if($foreach.hasNext),#end
+                #end
+                },
+                "context" : {
+                    "account-id" : "$context.identity.accountId",
+                    "api-id" : "$context.apiId",
+                    "api-key" : "$context.identity.apiKey",
+                    "authorizer-principal-id" : "$context.authorizer.principalId",
+                    "caller" : "$context.identity.caller",
+                    "cognito-authentication-provider" : "$context.identity.cognitoAuthenticationProvider",
+                    "cognito-authentication-type" : "$context.identity.cognitoAuthenticationType",
+                    "cognito-identity-id" : "$context.identity.cognitoIdentityId",
+                    "cognito-identity-pool-id" : "$context.identity.cognitoIdentityPoolId",
+                    "http-method" : "$context.httpMethod",
+                    "stage" : "$context.stage",
+                    "source-ip" : "$context.identity.sourceIp",
+                    "user" : "$context.identity.user",
+                    "user-agent" : "$context.identity.userAgent",
+                    "user-arn" : "$context.identity.userArn",
+                    "request-id" : "$context.requestId",
+                    "resource-id" : "$context.resourceId",
+                    "resource-path" : "$context.resourcePath"
+                    }
+                }
+
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: false
+            method.response.header.Access-Control-Allow-Methods: false
+            method.response.header.Access-Control-Allow-Origin: true
+          ResponseModels:
+            application/json: "Empty"
+      ResourceId: !Ref DataAssetDeleteResource
+      RestApiId: !Ref apiGateway
+  #----- data_asset END -----#
+
+  apiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - SourceSystemCreateMethod
+      - SourceSystemReadMethod
+      - SourceSystemUpdateMethod
+      - SourceSystemDeleteMethod
+    Properties:
+      RestApiId: !Ref apiGateway
+      StageName: !Ref Environment
+
+Outputs:
+  apiGatewayInvokeURL:
+    Value: !Sub https://${apiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
