@@ -16,6 +16,9 @@ Parameters:
   CodeBucketPath:
     Type: String
     Default: aws-datalake-framework-api/zip-files
+  ObjectVersion:
+    Type: String
+    Default: "qwerty"
 
 Resources:
   DataAssetAPI:
@@ -27,6 +30,7 @@ Resources:
       Code:
         S3Bucket: !Ref CodeBucket
         S3Key: !Sub "${Environment}/${CodeBucketPath}/aws-dl-fmwrk-data-asset-api.zip"
+        S3ObjectVersion: !Ref ObjectVersion
       Handler: lambda_function.lambda_handler
       Role: !Ref LambdaIamRole
       Runtime: python3.7
@@ -57,6 +61,7 @@ Resources:
       Code:
         S3Bucket: !Ref CodeBucket
         S3Key: !Sub "${Environment}/${CodeBucketPath}/aws-dl-fmwrk-data-asset-catalogs-api.zip"
+        S3ObjectVersion: !Ref ObjectVersion
       Handler: lambda_function.lambda_handler
       Role: !Ref LambdaIamRole
       Runtime: python3.7
@@ -76,6 +81,7 @@ Resources:
       Code:
         S3Bucket: !Ref CodeBucket
         S3Key: !Sub "${Environment}/${CodeBucketPath}/aws-dl-fmwrk-data-asset-info-api.zip"
+        S3ObjectVersion: !Ref ObjectVersion
       Handler: lambda_function.lambda_handler
       Role: !Ref LambdaIamRole
       Runtime: python3.7
@@ -95,6 +101,7 @@ Resources:
       Code:
         S3Bucket: !Ref CodeBucket
         S3Key: !Sub "${Environment}/${CodeBucketPath}/aws-dl-fmwrk-source-system-api.zip"
+        S3ObjectVersion: !Ref ObjectVersion
       Handler: lambda_function.lambda_handler
       Role: !Ref LambdaIamRole
       Runtime: python3.7
@@ -116,6 +123,7 @@ Resources:
       Code:
         S3Bucket: !Ref CodeBucket
         S3Key: !Sub "${Environment}/${CodeBucketPath}/aws-dl-fmwrk-target-system-api.zip"
+        S3ObjectVersion: !Ref ObjectVersion
       Handler: lambda_function.lambda_handler
       Role: !Ref LambdaIamRole
       Runtime: python3.7
@@ -141,9 +149,10 @@ Resources:
       Content:
         S3Bucket: !Ref CodeBucket
         S3Key: !Sub "${Environment}/aws-datalake-framework-api/dependencies/pg_connect.zip"
+        S3ObjectVersion: !Ref ObjectVersion
       Description: Layer to connect to database
       LayerName: pg_connect_test
 Outputs:
-  LambdaDataIngestion:
+  LambdaDeployment:
     Description: Latest Commit to be updated here
-    Value: Updated test function function
+    Value: Updated lambda functions
