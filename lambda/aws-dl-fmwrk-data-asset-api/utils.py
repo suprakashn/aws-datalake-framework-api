@@ -75,8 +75,9 @@ def create_src_s3_dir_str(asset_id, message_body, config, mechanism):
 def glue_airflow_trigger(source_id, asset_id, schedule, email=None):
     s3_client = boto3.client("s3")
     template_bucket = 'dl-fmwrk-code-us-east-2'
+    env = os.environ['stage']
 
-    template_object_key = "aws-datalake-framework-ingestion/airflow/template/dl_fmwrk_dag_template.py"
+    template_object_key = f"{env}/aws-datalake-framework-ingestion/airflow/template/dl_fmwrk_dag_template.py"
     dag_id = f"{source_id}_{asset_id}_workflow"
     file_name = f"/mnt/dags/{source_id}_{asset_id}_workflow.py"
 
@@ -84,6 +85,7 @@ def glue_airflow_trigger(source_id, asset_id, schedule, email=None):
         Bucket=template_bucket, Key=template_object_key)["Body"].read()
     file_content = file_content.decode()
 
+    file_content = file_content.replace("env_placeholder", env)
     file_content = file_content.replace("src_sys_id_placeholder", source_id)
     file_content = file_content.replace("ast_id_placeholder", asset_id)
     file_content = file_content.replace("dag_id_placeholder", dag_id)
