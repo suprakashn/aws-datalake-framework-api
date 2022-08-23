@@ -205,6 +205,33 @@ Resources:
       ResourceId: !Ref SourceSystemCreateResource
       RestApiId: !Ref apiGateway
 
+  SourceSystemCreateCORS:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      ResourceId: !Ref SourceSystemCreateResource
+      RestApiId: !Ref apiGateway
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            StatusCode: "200"
+        PassthroughBehavior: WHEN_NO_TEMPLATES
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: "200"
+
   SourceSystemReadResource:
     Type: "AWS::ApiGateway::Resource"
     Properties:
@@ -291,6 +318,33 @@ Resources:
             application/json: "Empty"
       ResourceId: !Ref SourceSystemReadResource
       RestApiId: !Ref apiGateway
+
+  SourceSystemReadCORS:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      ResourceId: !Ref SourceSystemReadResource
+      RestApiId: !Ref apiGateway
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            StatusCode: "200"
+        PassthroughBehavior: WHEN_NO_TEMPLATES
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: "200"
 
   SourceSystemUpdateResource:
     Type: "AWS::ApiGateway::Resource"
@@ -379,6 +433,33 @@ Resources:
       ResourceId: !Ref SourceSystemUpdateResource
       RestApiId: !Ref apiGateway
 
+  SourceSystemUpdateCORS:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      ResourceId: !Ref SourceSystemUpdateResource
+      RestApiId: !Ref apiGateway
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            StatusCode: "200"
+        PassthroughBehavior: WHEN_NO_TEMPLATES
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: "200"
+
   SourceSystemDeleteResource:
     Type: "AWS::ApiGateway::Resource"
     Properties:
@@ -465,6 +546,33 @@ Resources:
             application/json: "Empty"
       ResourceId: !Ref SourceSystemDeleteResource
       RestApiId: !Ref apiGateway
+
+  SourceSystemDeleteCORS:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      ResourceId: !Ref SourceSystemDeleteResource
+      RestApiId: !Ref apiGateway
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            StatusCode: "200"
+        PassthroughBehavior: WHEN_NO_TEMPLATES
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: "200"
   #----- source_system END -----#
 
   #----- target_system resources & method -----#
@@ -561,6 +669,33 @@ Resources:
       ResourceId: !Ref TargetSystemCreateResource
       RestApiId: !Ref apiGateway
 
+  TargetSystemCreateCORS:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      ResourceId: !Ref TargetSystemCreateResource
+      RestApiId: !Ref apiGateway
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            StatusCode: "200"
+        PassthroughBehavior: WHEN_NO_TEMPLATES
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: "200"
+
   TargetSystemReadResource:
     Type: "AWS::ApiGateway::Resource"
     Properties:
@@ -647,6 +782,33 @@ Resources:
             application/json: "Empty"
       ResourceId: !Ref TargetSystemReadResource
       RestApiId: !Ref apiGateway
+
+  TargetSystemReadCORS:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      ResourceId: !Ref TargetSystemReadResource
+      RestApiId: !Ref apiGateway
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            StatusCode: "200"
+        PassthroughBehavior: WHEN_NO_TEMPLATES
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: "200"
 
   TargetSystemUpdateResource:
     Type: "AWS::ApiGateway::Resource"
@@ -735,6 +897,33 @@ Resources:
       ResourceId: !Ref TargetSystemUpdateResource
       RestApiId: !Ref apiGateway
 
+  TargetSystemUpdateCORS:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      ResourceId: !Ref TargetSystemUpdateResource
+      RestApiId: !Ref apiGateway
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            StatusCode: "200"
+        PassthroughBehavior: WHEN_NO_TEMPLATES
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: "200"
+
   TargetSystemDeleteResource:
     Type: "AWS::ApiGateway::Resource"
     Properties:
@@ -821,6 +1010,33 @@ Resources:
             application/json: "Empty"
       ResourceId: !Ref TargetSystemDeleteResource
       RestApiId: !Ref apiGateway
+
+  TargetSystemDeleteCORS:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      ResourceId: !Ref TargetSystemDeleteResource
+      RestApiId: !Ref apiGateway
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            StatusCode: "200"
+        PassthroughBehavior: WHEN_NO_TEMPLATES
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: "200"
   #----- target_system END -----#
 
   #----- data_asset resources & method -----#
@@ -917,6 +1133,33 @@ Resources:
       ResourceId: !Ref DataAssetCreateResource
       RestApiId: !Ref apiGateway
 
+  DataAssetCreateCORS:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      ResourceId: !Ref DataAssetCreateResource
+      RestApiId: !Ref apiGateway
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            StatusCode: "200"
+        PassthroughBehavior: WHEN_NO_TEMPLATES
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: "200"
+
   DataAssetReadResource:
     Type: "AWS::ApiGateway::Resource"
     Properties:
@@ -1003,6 +1246,33 @@ Resources:
             application/json: "Empty"
       ResourceId: !Ref DataAssetReadResource
       RestApiId: !Ref apiGateway
+
+  DataAssetReadCORS:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      ResourceId: !Ref DataAssetReadResource
+      RestApiId: !Ref apiGateway
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            StatusCode: "200"
+        PassthroughBehavior: WHEN_NO_TEMPLATES
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: "200"
 
   DataAssetUpdateResource:
     Type: "AWS::ApiGateway::Resource"
@@ -1091,6 +1361,33 @@ Resources:
       ResourceId: !Ref DataAssetUpdateResource
       RestApiId: !Ref apiGateway
 
+  DataAssetUpdateCORS:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      ResourceId: !Ref DataAssetUpdateResource
+      RestApiId: !Ref apiGateway
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            StatusCode: "200"
+        PassthroughBehavior: WHEN_NO_TEMPLATES
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: "200"
+
   DataAssetDeleteResource:
     Type: "AWS::ApiGateway::Resource"
     Properties:
@@ -1177,6 +1474,33 @@ Resources:
             application/json: "Empty"
       ResourceId: !Ref DataAssetDeleteResource
       RestApiId: !Ref apiGateway
+
+  DataAssetDeleteCORS:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      ResourceId: !Ref DataAssetDeleteResource
+      RestApiId: !Ref apiGateway
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            StatusCode: "200"
+        PassthroughBehavior: WHEN_NO_TEMPLATES
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: "200"
   #----- data_asset END -----#
 
   #----- data_asset_info resources & method -----#
@@ -1274,6 +1598,33 @@ Resources:
             application/json: "Empty"
       ResourceId: !Ref DataAssetInfoReadResource
       RestApiId: !Ref apiGateway
+
+  DataAssetInfoReadCORS:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      ResourceId: !Ref DataAssetInfoReadResource
+      RestApiId: !Ref apiGateway
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            StatusCode: "200"
+        PassthroughBehavior: WHEN_NO_TEMPLATES
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: "200"
   #----- data_asset_info END -----#
 
   #----- data_catalog resources & method -----#
@@ -1371,6 +1722,33 @@ Resources:
             application/json: "Empty"
       ResourceId: !Ref DataCatalogReadResource
       RestApiId: !Ref apiGateway
+
+  DataCatalogReadCORS:
+    Type: "AWS::ApiGateway::Method"
+    Properties:
+      ResourceId: !Ref DataCatalogReadResource
+      RestApiId: !Ref apiGateway
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            StatusCode: "200"
+        PassthroughBehavior: WHEN_NO_TEMPLATES
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: "200"
   #----- data_catalog END -----#
 
   apiGatewayDeployment:
@@ -1390,6 +1768,20 @@ Resources:
       - DataAssetDeleteMethod
       - DataAssetInfoReadMethod
       - DataCatalogReadMethod
+      - SourceSystemCreateCORS
+      - SourceSystemReadCORS
+      - SourceSystemUpdateCORS
+      - SourceSystemDeleteCORS
+      - TargetSystemCreateCORS
+      - TargetSystemReadCORS
+      - TargetSystemUpdateCORS
+      - TargetSystemDeleteCORS
+      - DataAssetCreateCORS
+      - DataAssetReadCORS
+      - DataAssetUpdateCORS
+      - DataAssetDeleteCORS
+      - DataAssetInfoReadCORS
+      - DataCatalogReadCORS
     Properties:
       RestApiId: !Ref apiGateway
       StageName: !Ref Environment
@@ -1397,3 +1789,7 @@ Resources:
 Outputs:
   apiGatewayInvokeURL:
     Value: !Sub https://${apiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Environment}/
+  apiGatewayId:
+    Value: !Ref apiGateway
+  Environment:
+    Value: !Ref Environment
