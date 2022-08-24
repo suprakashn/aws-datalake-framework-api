@@ -70,9 +70,9 @@ def parse_ingestion_attributes(asset_id, message_body, database):
         "trigger_mechanism": message_body["ingestion_attributes"]["trigger_mechanism"],
         "frequency": freq,
         "modified_ts": datetime.utcnow(),
-        "data_stream":None,
-        "ext_method": None if "ext_method" not in message_body["ingestion_attributes"].keys() else message_body["ingestion_attributes"]["ext_method"],
-        "ext_col": None if "ext_col" not in message_body["ingestion_attributes"].keys() else message_body["ingestion_attributes"]["ext_col"]
+        "data_stream": None,
+        "ext_method": message_body["ingestion_attributes"]["ext_method"],
+        "ext_col": message_body["ingestion_attributes"]["ext_col"]
     }
 
     # Getting required data from source_system_ingstn_atrbts table
@@ -91,9 +91,9 @@ def parse_ingestion_attributes(asset_id, message_body, database):
                 "ingstn_src_path"
             ] = f"s3://dl-fmwrk-evnt-drvn-inbound-us-east-2/init/{src_sys_id}/{asset_id}/"
     elif ingestion_pattern == "stream":
-        ingestion_attributes["data_stream"]=message_body["ingestion_attributes"]["data_stream"]
-        data_stream_name=message_body["ingestion_attributes"]["data_stream"]
-        create_delivery_stream(data_stream_name,src_sys_id,asset_id)
+        ingestion_attributes["data_stream"] = message_body["ingestion_attributes"]["data_stream"]
+        data_stream_name = message_body["ingestion_attributes"]["data_stream"]
+        create_delivery_stream(data_stream_name, src_sys_id, asset_id)
     else:
         ingestion_attributes["src_table_name"] = message_body["ingestion_attributes"]["src_table_name"]
         ingestion_attributes["src_sql_query"] = message_body["ingestion_attributes"]["src_sql_query"]
@@ -116,8 +116,8 @@ def parse_data_asset_attributes(asset_id, message_body):
             "pk_ind": message_body["asset_attributes"][i]["pk_ind"],
             "null_ind": message_body["asset_attributes"][i]["null_ind"],
             "data_type": message_body["asset_attributes"][i]["data_type"],
-            "datetime_format": None if "datetime_format" not in message_body["asset_attributes"][i].keys() else message_body["asset_attributes"][i]["datetime_format"],
-            "tgt_datetime_format": None if "tgt_datetime_format" not in message_body["asset_attributes"][i].keys() else message_body["asset_attributes"][i]["tgt_datetime_format"]
+            "datetime_format": message_body["asset_attributes"][i]["datetime_format"],
+            "tgt_datetime_format": message_body["asset_attributes"][i]["tgt_datetime_format"]
         }
         attribute["modified_ts"] = datetime.utcnow()
         attribute["asset_id"] = asset_id

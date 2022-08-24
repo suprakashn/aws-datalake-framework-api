@@ -40,7 +40,9 @@ def read_asset(event, method, database):
         "null_ind",
         "data_type",
         "tgt_col_nm",
-        "tgt_data_type"
+        "tgt_data_type",
+        "datetime_format",
+        "tgt_datetime_format"
     ]
     ingestion_columns = [
         "asset_id",
