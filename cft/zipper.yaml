@@ -69,10 +69,10 @@ Resources:
                   tgt_key: path of the target
               """
               # download the files into tmp/zip/ folder
-              download_s3_folder(src, src_key, "/tmp/zip/{name}/")
+              download_s3_folder(src, src_key, f"/tmp/zip/{name}/")
               # zip the contents of tmp/zip/ folder
               shutil.make_archive(base_name=f"/tmp/{name}",
-                                  format="zip", root_dir="/tmp/zip/{name}/")
+                                  format="zip", root_dir=f"/tmp/zip/{name}/")
               print(f"zipped in /tmp/ folder as {name}.zip")
               # once zipped in temp copy it to your preferred s3 location
               if tgt_key:
@@ -126,7 +126,8 @@ Resources:
                           body["failed"].append(f"{dl_dict[obj]}/{obj}.zip")
                       else:
                           body["failed"] = [f"{dl_dict[obj]}/{obj}.zip"]
-                      body["status"] = 204
+                      body["status"] = 404
+                      break
               if body["status"] == 200:
                 cfnresponse.send(event, context, cfnresponse.SUCCESS, body, "CustomResourcePhysicalID")
               else:
