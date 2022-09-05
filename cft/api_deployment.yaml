@@ -46,6 +46,7 @@ Resources:
         SecurityGroupIds:
           - sg-0fc188bdecea72d69
         SubnetIds:
+          - subnet-0d747334837f4c777
           - subnet-0ff94b02df415f0ec
   DataAssetCatalogAPI:
     Type: AWS::Lambda::Function
