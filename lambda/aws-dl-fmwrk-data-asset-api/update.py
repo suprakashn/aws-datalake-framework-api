@@ -5,6 +5,7 @@ from api_response import Response
 
 def update_dag(message_body, src_sys_id, asset_id):
     # Deleting previous dag
+    print(f"deleting old dag for asset_id : {asset_id}")
     dag = f"/mnt/dags/{src_sys_id}_{asset_id}_workflow.py"
     if os.path.exists(dag):
         os.remove(dag)
@@ -73,6 +74,7 @@ def parse_data_asset_attributes(asset_id, message_body):
 
 def update_asset_info(message_body, asset_id, src_sys_id, message_keys, database):
     if "asset_info" in message_keys:
+        print(f"updating asset info for asset_id : {asset_id}")
         # asset_nm = message_body["asset_info"]["asset_nm"]
         # if "rs_load_ind" in message_body["asset_info"].keys():
         #    rs_load_ind = message_body["asset_info"]["rs_load_ind"]
@@ -96,6 +98,7 @@ def update_asset_info(message_body, asset_id, src_sys_id, message_keys, database
 
 def update_asset_attributes(message_body, asset_id, message_keys, database):
     if "asset_attributes" in message_keys:
+        print(f"updating asset attributes for asset_id : {asset_id}")
         # Deleting old data
         database.delete(
             table="data_asset_attributes",
@@ -116,6 +119,7 @@ def update_asset_attributes(message_body, asset_id, message_keys, database):
 
 def update_ingestion_attributes(message_body, asset_id, src_sys_id, message_keys, database):
     if "ingestion_attributes" in message_keys:
+        print(f"updating ingestion attributes for asset_id : {asset_id}")
         ingestion_attributes = message_body["ingestion_attributes"].copy()
         ingestion_attributes["modified_ts"] = datetime.utcnow()
         where_clause = ("asset_id=%s and src_sys_id=%s", [
@@ -142,6 +146,7 @@ def update_asset(event, method, database):
     message_keys = message_body.keys()
 
     try:
+        print(f"updating asset info in database")
         asset_info = update_asset_info(
             message_body,
             asset_id,
@@ -149,12 +154,14 @@ def update_asset(event, method, database):
             message_keys,
             database
         )
+        print(f"updating asset attributes in database")
         asset_attributes = update_asset_attributes(
             message_body,
             asset_id,
             message_keys,
             database
         )
+        print(f"updating ingestion attributes in database")
         ingestion_attributes = update_ingestion_attributes(
             message_body,
             asset_id,
@@ -165,6 +172,7 @@ def update_asset(event, method, database):
 
         data_adv_dq = []
         if "adv_dq_rules" in message_keys:
+            print(f"updating adv dq in database")
             update_adv_dq(
                 database, message_body, src_sys_id, asset_id
             )
@@ -180,9 +188,10 @@ def update_asset(event, method, database):
     except Exception as e:
         print(e)
         database.rollback()
+        print("rolled back the changes made in database")
         database.close()
         status = False
-        body = {}
+        body = str(e)
 
     # -----------
 

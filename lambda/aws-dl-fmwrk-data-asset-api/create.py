@@ -5,6 +5,8 @@ from api_response import Response
 
 def parse_asset_info(asset_id, message_body, database):
 
+    print(f"parsing asset info for asset_id : {asset_id}")
+
     target_id = message_body["asset_info"]["target_id"]
     src_sys_id = message_body["asset_info"]["src_sys_id"]
     # Getting required data from target and source sys tables
@@ -54,11 +56,13 @@ def parse_asset_info(asset_id, message_body, database):
 
 def parse_ingestion_attributes(asset_id, message_body, database):
 
+    print(f"parsing ingestion attributes for asset_id : {asset_id}")
+
     src_sys_id = message_body["asset_info"]["src_sys_id"]
 
     freq = "None"
     if "frequency" in message_body["ingestion_attributes"].keys():
-        if message_body["ingestion_attributes"]["frequency"] != "":
+        if message_body["ingestion_attributes"]["frequency"] != None:
             freq = message_body["ingestion_attributes"]["frequency"]
 
     ingestion_attributes = {
@@ -102,6 +106,8 @@ def parse_ingestion_attributes(asset_id, message_body, database):
 
 
 def parse_data_asset_attributes(asset_id, message_body):
+
+    print(f"parsing asset attributes for asset_id : {asset_id}")
 
     data_asset_attributes = []
 
@@ -176,19 +182,23 @@ def create_asset(event, method, config, database):
     )
 
     try:
+        print(f"inserting asset info into database")
         database.insert(
             table="data_asset",
             data=data_asset
         )
+        print(f"inserting asset attributes into database")
         database.insert_many(
             table="data_asset_attributes",
             data=data_asset_attributes
         )
+        print(f"inserting ingestion attributes into database")
         database.insert(
             table="data_asset_ingstn_atrbts",
             data=ingestion_attributes
         )
         if adv_dq_rules:
+            print(f"inserting dq rules into database")
             database.insert_many(
                 table='adv_dq_rules',
                 data=adv_dq_rules
@@ -227,6 +237,7 @@ def create_asset(event, method, config, database):
         status = False
         body = str(e)
         database.rollback()
+        print("rolled back the changes made in database")
         database.close()
 
     # -----------

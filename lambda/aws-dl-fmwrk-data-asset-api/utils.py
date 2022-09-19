@@ -7,19 +7,25 @@ import json
 
 
 def getGlobalParams():
+    print("reading globalConfig")
     with open('config/globalConfig.json', "r") as json_file:
         json_config = json.load(json_file)
         return json_config
 
 
 def get_database():
+    print("connecting to database")
     db_secret = os.environ['secret_name']
     db_region = os.environ['secret_region']
-    conn = Connector(secret=db_secret, region=db_region, autocommit=False)
+    db_schema = os.environ['stage'] if os.environ['stage'] else 'dev'
+    conn = Connector(
+        secret=db_secret, region=db_region, autocommit=False, schema=db_schema
+    )
     return conn
 
 
 def generate_asset_id(n):
+    print(f"generating {n} digit asset_id")
     range_start = 10**(n-1)
     range_end = (10**n)-1
     return randint(range_start, range_end)
@@ -73,6 +79,7 @@ def create_src_s3_dir_str(asset_id, message_body, config, mechanism):
 
 
 def glue_airflow_trigger(source_id, asset_id, schedule, email=None):
+    print(f"creating dag for asset_id : {asset_id}")
     s3_client = boto3.client("s3")
     template_bucket = 'dl-fmwrk-code-us-east-2'
     env = os.environ['stage']
@@ -100,6 +107,8 @@ def glue_airflow_trigger(source_id, asset_id, schedule, email=None):
     with open(file_name, "wb") as dag_file:
         dag_file.write(file)
 
+    print(
+        f"Upload succeeded: {dag_id}.py has been uploaded to Airflow Dags folder in eks")
     return {
         'statusCode': 200,
         'body': f"Upload succeeded: {dag_id}.py has been uploaded to Airflow Dags folder"
@@ -107,6 +116,7 @@ def glue_airflow_trigger(source_id, asset_id, schedule, email=None):
 
 
 def insert_event_to_dynamoDb(event, context, api_call_type, status="success", op_type="insert"):
+    print(f"inserting into dynamoDB; status : {status}")
     cur_time = datetime.now()
     aws_request_id = context.aws_request_id
     log_group_name = context.log_group_name
@@ -159,9 +169,9 @@ def insert_event_to_dynamoDb(event, context, api_call_type, status="success", op
 
 
 def parse_adv_dq(body, asset_id, src_id):
-    print(body)
     if 'adv_dq_rules' in body.keys():
         if body['adv_dq_rules']:
+            print(f"parsing adv_dq for asset_id : {asset_id}")
             input_rules = body['adv_dq_rules']
             dq_list = list()
             for idx, rule in enumerate(input_rules):
@@ -173,6 +183,7 @@ def parse_adv_dq(body, asset_id, src_id):
                 }
                 dq_list.append(elem_dict)
             return dq_list
+    print("skipped adv dq parsing")
     return None
 
 
@@ -182,7 +193,6 @@ def delete_adv_dq(db, asset_id):
         table="adv_dq_rules",
         where=where_clause
     )
-    db.commit()
 
 
 def update_adv_dq(db, body, src_id, asset_id):
