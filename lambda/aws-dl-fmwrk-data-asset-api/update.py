@@ -10,10 +10,7 @@ def update_dag(message_body, src_sys_id, asset_id):
     if os.path.exists(dag):
         os.remove(dag)
     # Creating new dag
-    freq = "None"
-    if "frequency" in message_body["ingestion_attributes"].keys():
-        if message_body["ingestion_attributes"]["frequency"] != "":
-            freq = message_body["ingestion_attributes"]["frequency"]
+    freq = message_body["ingestion_attributes"]["frequency"]
     support_email = message_body["asset_info"]["support_cntct"]
     glue_airflow_trigger(
         source_id=str(src_sys_id),
