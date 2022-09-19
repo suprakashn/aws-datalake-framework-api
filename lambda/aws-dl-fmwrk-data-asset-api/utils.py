@@ -98,10 +98,12 @@ def glue_airflow_trigger(source_id, asset_id, schedule, email=None):
     file_content = file_content.replace("dag_id_placeholder", dag_id)
     if email:
         file_content = file_content.replace("email_placeholder", email)
-    if schedule == "None":
-        file_content = file_content.replace('"schedule_placeholder"', "None")
     else:
+        file_content = file_content.replace('"email_placeholder"', "None")
+    if schedule:
         file_content = file_content.replace("schedule_placeholder", schedule)
+    else:
+        file_content = file_content.replace('"schedule_placeholder"', "None")
 
     file = bytes(file_content, encoding='utf-8')
     with open(file_name, "wb") as dag_file:
