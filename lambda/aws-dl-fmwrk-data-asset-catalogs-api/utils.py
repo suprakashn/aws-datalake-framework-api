@@ -12,9 +12,13 @@ def getGlobalParams():
 
 
 def get_database():
+    print("connecting to database")
     db_secret = os.environ['secret_name']
     db_region = os.environ['secret_region']
-    conn = Connector(secret=db_secret, region=db_region, autocommit=False)
+    db_schema = os.environ['stage'] if os.environ['stage'] else 'dev'
+    conn = Connector(
+        secret=db_secret, region=db_region, autocommit=False, schema=db_schema
+    )
     return conn
 
 
