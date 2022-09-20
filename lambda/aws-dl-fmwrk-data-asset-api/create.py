@@ -32,6 +32,7 @@ def parse_asset_info(asset_id, message_body, database, message_keys):
             "asset_id": asset_id,
             "src_sys_id": src_sys_id,
             "target_id": target_id,
+            "derive_schema": bool(message_body["asset_info"]["derive_schema"]),
             "file_header": bool(message_body["asset_info"]["file_header"]),
             "multipartition": bool(message_body["asset_info"]["multipartition"]),
             "file_type": message_body["asset_info"]["file_type"],
