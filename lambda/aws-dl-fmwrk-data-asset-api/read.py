@@ -14,6 +14,7 @@ def read_asset(event, method, database):
         "src_sys_id",
         "target_id",
         "file_header",
+        "derive_schema",
         "multipartition",
         "file_type",
         "asset_nm",
