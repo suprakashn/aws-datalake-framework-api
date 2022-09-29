@@ -40,15 +40,14 @@ Resources:
         - !Ref LambdaLayer
       Timeout: 10
       FileSystemConfigs:
-        - Arn: arn:aws:elasticfilesystem:us-east-2:315119964270:access-point/fsap-0994f833b81d0920b
+        - Arn: arn:aws:elasticfilesystem:us-east-2:315119964270:access-point/fsap-0ee24f7bd919419e8
           LocalMountPath: /mnt/dags
       VpcConfig:
         SecurityGroupIds:
-          - sg-007fcde876fd52f62
+          - sg-0fc188bdecea72d69
         SubnetIds:
-          - subnet-03f0155c49645e5b6
-          - subnet-0a4e37a0bdf041cd5
-          - subnet-0a7dd7bcf53b3e27e
+          - subnet-0d747334837f4c777
+          - subnet-0ff94b02df415f0ec
   DataAssetCatalogAPI:
     Type: AWS::Lambda::Function
     Properties:
@@ -69,6 +68,12 @@ Resources:
           stage: !Ref Environment
       Layers:
         - !Ref LambdaLayer
+      VpcConfig:
+        SecurityGroupIds:
+          - sg-02a41940cc6aa1be3
+        SubnetIds:
+          - subnet-0e40a1516e02514f8
+          - subnet-0d747334837f4c777
   DataAssetInfoAPI:
     Type: AWS::Lambda::Function
     Properties:
@@ -89,6 +94,12 @@ Resources:
           stage: !Ref Environment
       Layers:
         - !Ref LambdaLayer
+      VpcConfig:
+        SecurityGroupIds:
+          - sg-02a41940cc6aa1be3
+        SubnetIds:
+          - subnet-0e40a1516e02514f8
+          - subnet-0d747334837f4c777
   SourceSystemAPI:
     Type: AWS::Lambda::Function
     Properties:
@@ -110,6 +121,12 @@ Resources:
           stage: !Ref Environment
       Layers:
         - !Ref LambdaLayer
+      VpcConfig:
+        SecurityGroupIds:
+          - sg-02a41940cc6aa1be3
+        SubnetIds:
+          - subnet-0e40a1516e02514f8
+          - subnet-0d747334837f4c777
       Timeout: 12
   TargetSystemAPI:
     Type: AWS::Lambda::Function
@@ -133,6 +150,12 @@ Resources:
       Layers:
         - !Ref LambdaLayer
       Timeout: 10
+      VpcConfig:
+        SecurityGroupIds:
+          - sg-02a41940cc6aa1be3
+        SubnetIds:
+          - subnet-0e40a1516e02514f8
+          - subnet-0d747334837f4c777
   LambdaLayer:
     Type: AWS::Lambda::LayerVersion
     Properties:

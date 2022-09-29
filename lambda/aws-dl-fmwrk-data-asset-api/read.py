@@ -14,6 +14,7 @@ def read_asset(event, method, database):
         "src_sys_id",
         "target_id",
         "file_header",
+        "derive_schema",
         "multipartition",
         "file_type",
         "asset_nm",
@@ -65,17 +66,20 @@ def read_asset(event, method, database):
     where_clause = ("asset_id=%s", [asset_id])
 
     try:
+        print("retrieving data asset info")
         dict_asset = database.retrieve_dict(
             table="data_asset",
             cols=asset_columns,
             where=where_clause
         )
         if dict_asset:
+            print("retrieving data asset attributes")
             dict_attributes = database.retrieve_dict(
                 table="data_asset_attributes",
                 cols=attributes_columns,
                 where=where_clause
             )
+            print("retrieving ingestion attributes")
             dict_ingestion = database.retrieve_dict(
                 table="data_asset_ingstn_atrbts",
                 cols=ingestion_columns,
@@ -84,6 +88,7 @@ def read_asset(event, method, database):
                     [asset_id, src_sys_id]
                 )
             )
+            print("retrieving adv dq rules")
             dict_dq = database.retrieve_dict(
                 table="adv_dq_rules",
                 cols=dq_columns,
@@ -98,7 +103,8 @@ def read_asset(event, method, database):
             }
         else:
             status = False
-            body = {}
+            body = f"There is no metadata for asset_id : {asset_id}"
+            print(body)
         database.close()
 
     except Exception as e:

@@ -34,8 +34,34 @@ Resources:
       Description: Testing the deployment of the API Gateway
       EndpointConfiguration:
         Types:
-          - REGIONAL
+          - PRIVATE
+        VpcEndpointIds:
+          - vpce-09ed34d5027dbb429
       Name: !Sub ${apiGatewayName}-${Environment}
+      Policy: |
+        {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Deny",
+                    "Principal": "*",
+                    "Action": "execute-api:Invoke",
+                    "Resource": "execute-api:/*",
+                    "Condition": {
+                        "StringNotEquals": {
+                            "aws:SourceVpce": "vpce-09ed34d5027dbb429",
+                            "aws:sourceVpc": "vpc-086ac8d24435c8c31"
+                        }
+                    }
+                },
+                {
+                    "Effect": "Allow",
+                    "Principal": "*",
+                    "Action": "execute-api:Invoke",
+                    "Resource": "execute-api:/*"
+                }
+            ]
+        }
   SourceSystemLambdaPermission:
     Type: "AWS::Lambda::Permission"
     Properties:
